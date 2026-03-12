@@ -8,7 +8,7 @@ class Device(SQLModel, table=True):
 
     mac: str = Field(primary_key=True)
 
-    customer_no: int = Field(foreign_key="customer.customer_no")
+    customer_no: Optional[int] = Field(default=None, foreign_key="customer.customer_no")
 
     manufacturing_date: date
     dms: str
