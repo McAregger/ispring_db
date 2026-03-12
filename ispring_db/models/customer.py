@@ -19,3 +19,4 @@ class Customer(SQLModel, table=True):
     email: str
 
     devices: list["Device"] = Relationship(back_populates="customer")
+    gateways: list["Gateway"] = Relationship(back_populates="customer")

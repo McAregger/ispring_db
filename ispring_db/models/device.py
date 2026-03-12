@@ -12,8 +12,10 @@ class Device(SQLModel, table=True):
 
     manufacturing_date: date
     dms: str
+    ble_antenna: str
     circuit_diagram_no: str
     revision: str
+    assembly_plan: str
     bridge_layout: str
     batch_no: str
 

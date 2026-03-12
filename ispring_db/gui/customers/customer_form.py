@@ -20,7 +20,7 @@ class CustomerFormWindow(QWidget):
 
         self.customer = customer
         self.setWindowTitle("Customer Form")
-        self.resize(500, 400)
+        self.resize(300, 400)
 
         self.company_input = QLineEdit()
         self.street_input = QLineEdit()

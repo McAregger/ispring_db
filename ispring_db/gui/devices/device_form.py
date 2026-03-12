@@ -27,13 +27,14 @@ class DeviceFormWindow(QWidget):
         self.device = device
 
         self.setWindowTitle("Device Form")
-        self.resize(500, 400)
+        self.resize(300, 400)
 
         self.mac_input = QLineEdit()
         self.mac_input.textChanged.connect(self.on_mac_changed)
 
         self.customer_input = QComboBox()
         self.load_customers()
+
 
         self.date_input = QDateEdit()
         self.date_input.setCalendarPopup(True)
@@ -47,8 +48,16 @@ class DeviceFormWindow(QWidget):
             "GFLAB-6-350-50",
         ])
 
+        self.ble_ant_input = QComboBox()
+        self.ble_ant_input.addItems([
+            "",
+            "internal",
+            "external",
+        ])
+
         self.diagram_input = QLineEdit()
         self.revision_input = QLineEdit()
+        self.assembly_plan_input = QLineEdit()
 
         self.bridge_layout_input = QComboBox()
         self.bridge_layout_input.addItems([
@@ -64,8 +73,10 @@ class DeviceFormWindow(QWidget):
         form.addRow("Customer", self.customer_input)
         form.addRow("Manufacturing Date", self.date_input)
         form.addRow("DMS", self.dms_input)
+        form.addRow("BLE Antenna", self.ble_ant_input)
         form.addRow("Circuit Diagram No", self.diagram_input)
         form.addRow("Revision", self.revision_input)
+        form.addRow("Assembly Plan", self.assembly_plan_input)
         form.addRow("Bridge Layout", self.bridge_layout_input)
         form.addRow("Batch No", self.batch_input)
 
@@ -127,6 +138,11 @@ class DeviceFormWindow(QWidget):
             if index >= 0:
                 self.dms_input.setCurrentIndex(index)
 
+        if self.device.ble_antenna:
+            index = self.ble_ant_input.findText(self.device.ble_antenna)
+            if index >= 0:
+                self.ble_ant_input.setCurrentIndex(index)
+
         if self.device.bridge_layout:
             index = self.bridge_layout_input.findText(self.device.bridge_layout)
             if index >= 0:
@@ -134,6 +150,7 @@ class DeviceFormWindow(QWidget):
 
         self.diagram_input.setText(self.device.circuit_diagram_no or "")
         self.revision_input.setText(self.device.revision or "")
+        self.assembly_plan_input.setText(self.device.assembly_plan or "")
         self.batch_input.setText(self.device.batch_no or "")
 
     def format_mac(self, text: str):
@@ -207,8 +224,10 @@ class DeviceFormWindow(QWidget):
 
                 device.manufacturing_date = self.date_input.date().toPython()
                 device.dms = self.dms_input.currentText()
+                device.ble_antenna = self.ble_ant_input.currentText()
                 device.circuit_diagram_no = self.diagram_input.text()
                 device.revision = self.revision_input.text()
+                device.assembly_plan = self.assembly_plan_input.text()
                 device.bridge_layout = self.bridge_layout_input.currentText()
                 device.batch_no = self.batch_input.text()
 

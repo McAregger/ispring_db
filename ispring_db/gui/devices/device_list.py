@@ -28,7 +28,7 @@ class DeviceListWindow(QWidget):
 
         self.table = QTableWidget()
 
-        self.table.setColumnCount(8)
+        self.table.setColumnCount(10)
 
         self.table.setHorizontalHeaderLabels(
             [
@@ -36,8 +36,10 @@ class DeviceListWindow(QWidget):
                 "Customer",
                 "Manufacturing Date",
                 "DMS",
+                "BLE Antenna",
                 "Circuit Diagram",
                 "Revision",
+                "Assembly Plan",
                 "Bridge Layout",
                 "Batch No",
             ]
@@ -51,6 +53,13 @@ class DeviceListWindow(QWidget):
         header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
         header.setSectionResizeMode(1, QHeaderView.Stretch)
         header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(3, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(4, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(5, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(6, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(7, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(8, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(9, QHeaderView.ResizeToContents)
 
         self.new_button = QPushButton("New")
         self.edit_button = QPushButton("Edit")
@@ -89,6 +98,7 @@ class DeviceListWindow(QWidget):
 
         self.table.setRowCount(len(results))
 
+
         for row, (device, customer) in enumerate(results):
 
             self.table.setItem(row, 0, QTableWidgetItem(device.mac))
@@ -101,10 +111,12 @@ class DeviceListWindow(QWidget):
             self.table.setItem(row, 1, QTableWidgetItem(customer_text))
             self.table.setItem(row, 2, QTableWidgetItem(str(device.manufacturing_date or "")))
             self.table.setItem(row, 3, QTableWidgetItem(device.dms or ""))
-            self.table.setItem(row, 4, QTableWidgetItem(device.circuit_diagram_no or ""))
-            self.table.setItem(row, 5, QTableWidgetItem(device.revision or ""))
-            self.table.setItem(row, 6, QTableWidgetItem(device.bridge_layout or ""))
-            self.table.setItem(row, 7, QTableWidgetItem(device.batch_no or ""))
+            self.table.setItem(row, 4, QTableWidgetItem(device.ble_antenna or ""))
+            self.table.setItem(row, 5, QTableWidgetItem(device.circuit_diagram_no or ""))
+            self.table.setItem(row, 6, QTableWidgetItem(device.revision or ""))
+            self.table.setItem(row, 7, QTableWidgetItem(device.assembly_plan or ""))
+            self.table.setItem(row, 8, QTableWidgetItem(device.bridge_layout or ""))
+            self.table.setItem(row, 9, QTableWidgetItem(device.batch_no or ""))
 
     def get_selected_mac(self):
 
