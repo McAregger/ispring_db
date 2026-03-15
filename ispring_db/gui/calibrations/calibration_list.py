@@ -40,6 +40,7 @@ class CalibrationListWindow(QWidget):
                 "Cal Def File",
             ]
         )
+        self.table.setSortingEnabled(True)
 
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
@@ -93,7 +94,7 @@ class CalibrationListWindow(QWidget):
 
         for row, calibration in enumerate(results):
             self.table.setItem(row, 0, QTableWidgetItem(str(calibration.cal_id)))
-            self.table.setItem(row, 1, QTableWidgetItem(calibration.calibration_type or ""))
+            self.table.setItem(row, 1, QTableWidgetItem(calibration.cal_type or ""))
             self.table.setItem(row, 2, QTableWidgetItem("" if calibration.min_temp is None else str(calibration.min_temp)))
             self.table.setItem(row, 3, QTableWidgetItem("" if calibration.max_temp is None else str(calibration.max_temp)))
             self.table.setItem(row, 4, QTableWidgetItem(str(calibration.cal_def_date or "")))

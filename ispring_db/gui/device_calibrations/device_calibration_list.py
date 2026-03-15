@@ -96,7 +96,7 @@ class DeviceCalibrationListWindow(QWidget):
             statement = (
                 select(DeviceCalibration, Device, Calibration)
                 .join(Device, DeviceCalibration.mac == Device.mac)
-                .join(Calibration, DeviceCalibration.cal_id == Calibration.cal_id)
+                .join(Calibration, DeviceCalibration.device_cal_id == Calibration.cal_id)
             )
             results = session.exec(statement).all()
 
@@ -104,7 +104,7 @@ class DeviceCalibrationListWindow(QWidget):
 
         for row, (dc, device, calibration) in enumerate(results):
 
-            calibration_text = f"{calibration.cal_id} - {calibration.calibration_type}"
+            calibration_text = f"{calibration.cal_id} - {calibration.cal_type}"
             filepath_display = self.shorten_left(dc.device_cal_filepath_tdms, 50)
 
             self.table.setItem(row, 0, QTableWidgetItem(str(dc.device_cal_id)))

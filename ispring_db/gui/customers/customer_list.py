@@ -1,4 +1,4 @@
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QApplication,
     QWidget,
@@ -20,6 +20,8 @@ from ispring_db.gui.customers.customer_form import CustomerFormWindow
 
 
 class CustomerListWindow(QWidget):
+    customer_selected = Signal(int)
+
 
     def __init__(self):
         super().__init__()
@@ -29,6 +31,7 @@ class CustomerListWindow(QWidget):
 
         self.table = QTableWidget()
         self.table.setColumnCount(11)
+
         self.table.setHorizontalHeaderLabels(
             [
                 "ID",
@@ -73,6 +76,8 @@ class CustomerListWindow(QWidget):
         self.edit_button.clicked.connect(self.edit_customer)
         self.delete_button.clicked.connect(self.delete_customer)
         self.refresh_button.clicked.connect(self.load_customers)
+
+        self.table.itemSelectionChanged.connect(self.on_selection_changed)
 
         button_layout = QHBoxLayout()
         button_layout.addWidget(self.new_button)
@@ -182,6 +187,21 @@ class CustomerListWindow(QWidget):
                 "Database Error",
                 f"Could not delete customer:\n{e}",
             )
+
+    def on_selection_changed(self):
+        print("test")
+        row = self.table.currentRow()
+        if row < 0:
+            return
+
+        item = self.table.item(row, 0)
+        if item is None:
+            return
+
+        customer_no = int(item.text())
+
+        self.customer_selected.emit(customer_no)
+
 
 
 if __name__ == "__main__":

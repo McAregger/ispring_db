@@ -18,6 +18,7 @@ class Device(SQLModel, table=True):
     assembly_plan: str
     bridge_layout: str
     batch_no: str
+    description: str
 
     customer: Optional["Customer"] = Relationship(back_populates="devices")
 

@@ -11,6 +11,8 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QComboBox,
     QDateEdit,
+    QTextEdit,
+
 )
 
 from sqlmodel import select
@@ -67,6 +69,8 @@ class DeviceFormWindow(QWidget):
         ])
 
         self.batch_input = QLineEdit()
+        self.description_input = QTextEdit()
+        self.description_input.setFixedHeight(80)
 
         form = QFormLayout()
         form.addRow("MAC", self.mac_input)
@@ -79,6 +83,7 @@ class DeviceFormWindow(QWidget):
         form.addRow("Assembly Plan", self.assembly_plan_input)
         form.addRow("Bridge Layout", self.bridge_layout_input)
         form.addRow("Batch No", self.batch_input)
+        form.addRow("Description", self.description_input)
 
         self.save_button = QPushButton("Save")
         self.cancel_button = QPushButton("Cancel")
@@ -117,6 +122,8 @@ class DeviceFormWindow(QWidget):
 
         if self.device is None:
             self.customer_input.setCurrentIndex(0)
+        else:
+            self.description_input.setPlainText(self.device.description or "")
 
 
     def load_device(self):
@@ -230,6 +237,7 @@ class DeviceFormWindow(QWidget):
                 device.assembly_plan = self.assembly_plan_input.text()
                 device.bridge_layout = self.bridge_layout_input.currentText()
                 device.batch_no = self.batch_input.text()
+                device.description = self.description_input.toPlainText().strip()
 
                 if not self.device:
                     session.add(device)

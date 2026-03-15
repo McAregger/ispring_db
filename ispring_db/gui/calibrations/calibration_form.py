@@ -88,7 +88,7 @@ class CalibrationFormWindow(QWidget):
 
     def load_calibration(self):
 
-        index = self.type_input.findText(self.calibration.calibration_type)
+        index = self.type_input.findText(self.calibration.cal_type)
         if index >= 0:
             self.type_input.setCurrentIndex(index)
 
@@ -136,7 +136,7 @@ class CalibrationFormWindow(QWidget):
                 else:
                     calibration = Calibration()
 
-                calibration.calibration_type = calibration_type
+                calibration.cal_type = calibration_type
                 calibration.min_temp = min_temp
                 calibration.max_temp = max_temp
                 calibration.cal_def_date = self.cal_def_date_input.date().toPython()

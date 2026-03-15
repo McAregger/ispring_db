@@ -33,9 +33,11 @@ if __name__ == "__main__":
 
     )
 
+    device = models.Device(
+
+    )
+
     with get_session() as session:
         session.add(customer)
         session.commit()
         session.refresh(customer)
-
-    print(customer)

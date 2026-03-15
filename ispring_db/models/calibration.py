@@ -8,7 +8,7 @@ class Calibration(SQLModel, table=True):
 
     cal_id: Optional[int] = Field(default=None, primary_key=True)
 
-    calibration_type: str
+    cal_type: str
     min_temp: float
     max_temp: float
     cal_def_date: date

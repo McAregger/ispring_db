@@ -113,7 +113,7 @@ class DeviceCalibrationFormWindow(QWidget):
         self.calibration_map = {}
 
         for c in calibrations:
-            label = f"{c.cal_id} - {c.calibration_type}"
+            label = f"{c.cal_id} - {c.cal_type}"
             self.calibration_input.addItem(label)
             self.calibration_map[label] = c.cal_id
 
@@ -131,15 +131,15 @@ class DeviceCalibrationFormWindow(QWidget):
 
     def load_device_calibration(self):
 
-        for i in range(self.device_input.count()):
-            label = self.device_input.itemText(i)
-            if self.device_map.get(label) == self.device_calibration.mac:
-                self.device_input.setCurrentIndex(i)
+        for i in range(self.calibration_input.count()):
+            label = self.calibration_input.itemText(i)
+            if self.calibration_map.get(label) == self.device_calibration.cal_id:
+                self.calibration_input.setCurrentIndex(i)
                 break
 
         for i in range(self.calibration_input.count()):
             label = self.calibration_input.itemText(i)
-            if self.calibration_map.get(label) == self.device_calibration.cal_id:
+            if self.calibration_map.get(label) == self.device_calibration.device_cal_id:
                 self.calibration_input.setCurrentIndex(i)
                 break
 
