@@ -11,11 +11,11 @@ from PySide6.QtWidgets import (
     QAbstractItemView,
 )
 
-from sqlmodel import select
 
-from ispring_db.core.database import get_session, create_db_and_tables
-from ispring_db.models import Calibration
+from ispring_db.core.database import create_db_and_tables
 from ispring_db.gui.calibrations.calibration_form import CalibrationFormWindow
+from ispring_db.services.calibration_repositry import (get_all_calibrations, get_calibration_with_cal_id,
+                                                       delete_calibration_with_cal_id)
 
 
 class CalibrationListWindow(QWidget):
@@ -87,12 +87,11 @@ class CalibrationListWindow(QWidget):
 
     def load_calibrations(self):
 
-        with get_session() as session:
-            results = session.exec(select(Calibration)).all()
+        calibrations = get_all_calibrations()
 
-        self.table.setRowCount(len(results))
+        self.table.setRowCount(len(calibrations))
 
-        for row, calibration in enumerate(results):
+        for row, calibration in enumerate(calibrations):
             self.table.setItem(row, 0, QTableWidgetItem(str(calibration.cal_id)))
             self.table.setItem(row, 1, QTableWidgetItem(calibration.cal_type or ""))
             self.table.setItem(row, 2, QTableWidgetItem("" if calibration.min_temp is None else str(calibration.min_temp)))
@@ -130,8 +129,7 @@ class CalibrationListWindow(QWidget):
         if cal_id is None:
             return
 
-        with get_session() as session:
-            calibration = session.get(Calibration, cal_id)
+        calibration = get_calibration_with_cal_id(cal_id)
 
         self.form = CalibrationFormWindow(calibration)
         self.form.show()
@@ -153,13 +151,7 @@ class CalibrationListWindow(QWidget):
         if reply == QMessageBox.No:
             return
 
-        with get_session() as session:
-
-            calibration = session.get(Calibration, cal_id)
-
-            if calibration:
-                session.delete(calibration)
-                session.commit()
+        delete_calibration_with_cal_id(cal_id)
 
         self.load_calibrations()
 
@@ -167,11 +159,8 @@ class CalibrationListWindow(QWidget):
 if __name__ == "__main__":
 
     import sys
-
     create_db_and_tables()
-
     app = QApplication(sys.argv)
-
     window = CalibrationListWindow()
     window.show()
 

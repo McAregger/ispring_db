@@ -13,14 +13,16 @@ from PySide6.QtWidgets import (
     QCheckBox,
 )
 
-from sqlmodel import select
-
-from ispring_db.core.database import get_session
-from ispring_db.models import DeviceCalibration, Device, Calibration
+from ispring_db.models import DeviceCalibration
+from ispring_db.services.device_repositry import get_all_devices
+from ispring_db.services.calibration_repositry import get_all_calibrations
+from ispring_db.services.device_calibration_repositry import (
+    get_device_calibration_with_device_cal_id,
+    save_device_calibration as save_device_calibration_record,
+)
 
 
 class DeviceCalibrationFormWindow(QWidget):
-
     def __init__(self, device_calibration: DeviceCalibration | None = None, parent=None):
         super().__init__(parent)
 
@@ -30,10 +32,7 @@ class DeviceCalibrationFormWindow(QWidget):
         self.resize(650, 320)
 
         self.device_input = QComboBox()
-        self.load_devices()
-
         self.calibration_input = QComboBox()
-        self.load_calibrations()
 
         self.status_input = QComboBox()
         self.status_input.addItems([
@@ -88,37 +87,32 @@ class DeviceCalibrationFormWindow(QWidget):
 
         self.setLayout(layout)
 
+        self.load_devices()
+        self.load_calibrations()
+
         if self.device_calibration:
             self.load_device_calibration()
 
     def load_devices(self):
-
-        with get_session() as session:
-            devices = session.exec(select(Device)).all()
+        devices = get_all_devices()
 
         self.device_input.clear()
-        self.device_map = {}
+        self.device_input.addItem("", None)
 
-        for d in devices:
-            label = d.mac
-            self.device_input.addItem(label)
-            self.device_map[label] = d.mac
+        for device in devices:
+            self.device_input.addItem(device.mac, device.mac)
 
     def load_calibrations(self):
-
-        with get_session() as session:
-            calibrations = session.exec(select(Calibration)).all()
+        calibrations = get_all_calibrations()
 
         self.calibration_input.clear()
-        self.calibration_map = {}
+        self.calibration_input.addItem("", None)
 
-        for c in calibrations:
-            label = f"{c.cal_id} - {c.cal_type}"
-            self.calibration_input.addItem(label)
-            self.calibration_map[label] = c.cal_id
+        for calibration in calibrations:
+            label = f"{calibration.cal_id} - {calibration.cal_type}"
+            self.calibration_input.addItem(label, calibration.cal_id)
 
     def browse_file(self):
-
         file_path, _ = QFileDialog.getOpenFileName(
             self,
             "Select TDMS File",
@@ -130,33 +124,29 @@ class DeviceCalibrationFormWindow(QWidget):
             self.filepath_input.setText(file_path)
 
     def load_device_calibration(self):
+        if not self.device_calibration:
+            return
 
-        for i in range(self.calibration_input.count()):
-            label = self.calibration_input.itemText(i)
-            if self.calibration_map.get(label) == self.device_calibration.cal_id:
-                self.calibration_input.setCurrentIndex(i)
-                break
+        device_index = self.device_input.findData(self.device_calibration.mac)
+        self.device_input.setCurrentIndex(device_index if device_index >= 0 else 0)
 
-        for i in range(self.calibration_input.count()):
-            label = self.calibration_input.itemText(i)
-            if self.calibration_map.get(label) == self.device_calibration.device_cal_id:
-                self.calibration_input.setCurrentIndex(i)
-                break
+        calibration_index = self.calibration_input.findData(self.device_calibration.cal_id)
+        self.calibration_input.setCurrentIndex(calibration_index if calibration_index >= 0 else 0)
 
-        index = self.status_input.findText(self.device_calibration.device_cal_status)
+        index = self.status_input.findText(self.device_calibration.device_cal_status or "")
         if index >= 0:
             self.status_input.setCurrentIndex(index)
 
         if self.device_calibration.device_cal_date:
-            self.date_input.setDate(QDate(self.device_calibration.device_cal_date))
+            value = self.device_calibration.device_cal_date
+            self.date_input.setDate(QDate(value.year, value.month, value.day))
 
-        self.filepath_input.setText(self.device_calibration.device_cal_filepath_tdms)
-        self.total_error_input.setText(self.device_calibration.device_cal_total_error)
-        self.station_input.setText(self.device_calibration.device_cal_station)
-        self.active_input.setChecked(self.device_calibration.is_active)
+        self.filepath_input.setText(self.device_calibration.device_cal_filepath_tdms or "")
+        self.total_error_input.setText(str(self.device_calibration.device_cal_total_error or ""))
+        self.station_input.setText(self.device_calibration.device_cal_station or "")
+        self.active_input.setChecked(bool(self.device_calibration.is_active))
 
     def save_device_calibration(self):
-
         if self.device_input.count() == 0:
             QMessageBox.warning(self, "Validation", "No device available.")
             return
@@ -165,11 +155,16 @@ class DeviceCalibrationFormWindow(QWidget):
             QMessageBox.warning(self, "Validation", "No calibration available.")
             return
 
-        device_label = self.device_input.currentText()
-        calibration_label = self.calibration_input.currentText()
+        mac = self.device_input.currentData()
+        cal_id = self.calibration_input.currentData()
 
-        mac = self.device_map.get(device_label)
-        cal_id = self.calibration_map.get(calibration_label)
+        if not mac:
+            QMessageBox.warning(self, "Validation", "Please select a device.")
+            return
+
+        if cal_id is None:
+            QMessageBox.warning(self, "Validation", "Please select a calibration.")
+            return
 
         status = self.status_input.currentText()
         calibration_date = self.date_input.date().toPython()
@@ -178,66 +173,36 @@ class DeviceCalibrationFormWindow(QWidget):
         station = self.station_input.text().strip()
         is_active = self.active_input.isChecked()
 
-        # if not filepath_tdms:
-        #     QMessageBox.warning(self, "Validation", "TDMS file is required.")
-        #     return
-        #
-        # if not total_error:
-        #     QMessageBox.warning(self, "Validation", "Total Error is required.")
-        #     return
-        #
-        # if not station:
-        #     QMessageBox.warning(self, "Validation", "Station is required.")
-        #     return
-        #
-        # if is_active and status not in ["passed", "recalibration"]:
-        #     QMessageBox.warning(
-        #         self,
-        #         "Validation",
-        #         "Only a successful calibration can be set active.",
-        #     )
-        #     return
-
         try:
-
-            with get_session() as session:
-
-                if self.device_calibration:
-                    dc = session.get(DeviceCalibration, self.device_calibration.device_cal_id)
-                else:
-                    dc = DeviceCalibration()
-
-                dc.mac = mac
-                dc.cal_id = cal_id
-                dc.device_cal_status = status
-                dc.device_cal_date = calibration_date
-                dc.device_cal_filepath_tdms = filepath_tdms
-                dc.device_cal_total_error = total_error
-                dc.device_cal_station = station
-                dc.is_active = is_active
-
-                if is_active:
-                    statement = select(DeviceCalibration).where(
-                        DeviceCalibration.mac == mac,
-                        DeviceCalibration.is_active == True,
+            if self.device_calibration:
+                dc = get_device_calibration_with_device_cal_id(
+                    self.device_calibration.device_cal_id
+                )
+                if dc is None:
+                    QMessageBox.warning(
+                        self,
+                        "Not Found",
+                        "The device calibration could not be found.",
                     )
-                    active_rows = session.exec(statement).all()
+                    return
+            else:
+                dc = DeviceCalibration()
 
-                    for row in active_rows:
-                        if self.device_calibration and row.device_cal_id == self.device_calibration.device_cal_id:
-                            continue
-                        row.is_active = False
+            dc.mac = mac
+            dc.cal_id = cal_id
+            dc.device_cal_status = status
+            dc.device_cal_date = calibration_date
+            dc.device_cal_filepath_tdms = filepath_tdms
+            dc.device_cal_total_error = total_error
+            dc.device_cal_station = station
+            dc.is_active = is_active
 
-                if not self.device_calibration:
-                    session.add(dc)
-
-                session.commit()
+            self.device_calibration = save_device_calibration_record(dc)
 
             QMessageBox.information(self, "Success", "Device calibration saved.")
             self.close()
 
         except Exception as e:
-
             QMessageBox.critical(
                 self,
                 "Database Error",
@@ -246,7 +211,6 @@ class DeviceCalibrationFormWindow(QWidget):
 
 
 if __name__ == "__main__":
-
     import sys
     from PySide6.QtWidgets import QApplication
     from ispring_db.core.database import create_db_and_tables

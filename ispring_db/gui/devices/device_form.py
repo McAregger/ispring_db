@@ -1,4 +1,6 @@
 import re
+from datetime import date
+from ispring_db.services.customer_repositry import get_all_customers
 
 from PySide6.QtCore import QDate
 from PySide6.QtWidgets import (
@@ -12,17 +14,14 @@ from PySide6.QtWidgets import (
     QComboBox,
     QDateEdit,
     QTextEdit,
-
+    QApplication,
 )
 
-from sqlmodel import select
-
-from ispring_db.core.database import get_session
-from ispring_db.models import Device, Customer
+from ispring_db.core.database import get_session, create_db_and_tables
+from ispring_db.models import Device
 
 
 class DeviceFormWindow(QWidget):
-
     def __init__(self, device: Device | None = None, parent=None):
         super().__init__(parent)
 
@@ -35,8 +34,6 @@ class DeviceFormWindow(QWidget):
         self.mac_input.textChanged.connect(self.on_mac_changed)
 
         self.customer_input = QComboBox()
-        self.load_customers()
-
 
         self.date_input = QDateEdit()
         self.date_input.setCalendarPopup(True)
@@ -69,6 +66,7 @@ class DeviceFormWindow(QWidget):
         ])
 
         self.batch_input = QLineEdit()
+
         self.description_input = QTextEdit()
         self.description_input.setFixedHeight(80)
 
@@ -98,8 +96,9 @@ class DeviceFormWindow(QWidget):
         layout = QVBoxLayout()
         layout.addLayout(form)
         layout.addLayout(buttons)
-
         self.setLayout(layout)
+
+        self.load_customers()
 
         if self.device:
             self.load_device()
@@ -107,38 +106,40 @@ class DeviceFormWindow(QWidget):
 
     def load_customers(self):
 
-        with get_session() as session:
-            customers = session.exec(select(Customer)).all()
-
+        customers = get_all_customers()
         self.customer_input.clear()
-        self.customer_input.addItem("")
-        self.customer_map = {"": None}
 
-        for c in customers:
+        # Leerer Eintrag = kein Customer
+        self.customer_input.addItem("", None)
 
-            label = f"{c.customer_no} - {c.company}"
-            self.customer_input.addItem(label)
-            self.customer_map[label] = c.customer_no
+        for customer in customers:
+            label = f"{customer.customer_no} - {customer.company}"
+            self.customer_input.addItem(label, customer.customer_no)
 
         if self.device is None:
             self.customer_input.setCurrentIndex(0)
         else:
-            self.description_input.setPlainText(self.device.description or "")
-
+            index = self.customer_input.findData(self.device.customer_no)
+            self.customer_input.setCurrentIndex(index if index >= 0 else 0)
 
     def load_device(self):
+        if not self.device:
+            return
 
         self.mac_input.setText(self.device.mac or "")
 
-        if self.device.customer_no:
-            for i in range(self.customer_input.count()):
-                label = self.customer_input.itemText(i)
-                if self.customer_map.get(label) == self.device.customer_no:
-                    self.customer_input.setCurrentIndex(i)
-                    break
-
         if self.device.manufacturing_date:
-            self.date_input.setDate(QDate(self.device.manufacturing_date))
+            value = self.device.manufacturing_date
+
+            if isinstance(value, str):
+                qdate = QDate.fromString(value, "yyyy-MM-dd")
+            elif isinstance(value, date):
+                qdate = QDate(value.year, value.month, value.day)
+            else:
+                qdate = QDate()
+
+            if qdate.isValid():
+                self.date_input.setDate(qdate)
 
         if self.device.dms:
             index = self.dms_input.findText(self.device.dms)
@@ -159,9 +160,9 @@ class DeviceFormWindow(QWidget):
         self.revision_input.setText(self.device.revision or "")
         self.assembly_plan_input.setText(self.device.assembly_plan or "")
         self.batch_input.setText(self.device.batch_no or "")
+        self.description_input.setPlainText(self.device.description or "")
 
-    def format_mac(self, text: str):
-
+    def format_mac(self, text: str) -> str:
         text = text.upper().replace(":", "").replace("-", "")
 
         if len(text) > 12:
@@ -170,7 +171,6 @@ class DeviceFormWindow(QWidget):
         return ":".join(text[i:i + 2] for i in range(0, len(text), 2))
 
     def on_mac_changed(self, text):
-
         formatted = self.format_mac(text)
 
         if formatted != text:
@@ -179,7 +179,6 @@ class DeviceFormWindow(QWidget):
             self.mac_input.blockSignals(False)
 
     def save_device(self):
-
         mac = self.mac_input.text().strip()
 
         if not mac:
@@ -197,11 +196,8 @@ class DeviceFormWindow(QWidget):
             return
 
         try:
-
             with get_session() as session:
-
                 if self.device:
-
                     if mac != self.device.mac:
                         QMessageBox.warning(
                             self,
@@ -211,9 +207,14 @@ class DeviceFormWindow(QWidget):
                         return
 
                     device = session.get(Device, self.device.mac)
-
+                    if device is None:
+                        QMessageBox.warning(
+                            self,
+                            "Not Found",
+                            "The device could not be found in the database.",
+                        )
+                        return
                 else:
-
                     existing = session.get(Device, mac)
 
                     if existing:
@@ -226,17 +227,15 @@ class DeviceFormWindow(QWidget):
 
                     device = Device(mac=mac)
 
-                customer_label = self.customer_input.currentText()
-                device.customer_no = self.customer_map.get(customer_label)
-
+                device.customer_no = self.customer_input.currentData()
                 device.manufacturing_date = self.date_input.date().toPython()
                 device.dms = self.dms_input.currentText()
                 device.ble_antenna = self.ble_ant_input.currentText()
-                device.circuit_diagram_no = self.diagram_input.text()
-                device.revision = self.revision_input.text()
-                device.assembly_plan = self.assembly_plan_input.text()
+                device.circuit_diagram_no = self.diagram_input.text().strip()
+                device.revision = self.revision_input.text().strip()
+                device.assembly_plan = self.assembly_plan_input.text().strip()
                 device.bridge_layout = self.bridge_layout_input.currentText()
-                device.batch_no = self.batch_input.text()
+                device.batch_no = self.batch_input.text().strip()
                 device.description = self.description_input.toPlainText().strip()
 
                 if not self.device:
@@ -248,7 +247,6 @@ class DeviceFormWindow(QWidget):
             self.close()
 
         except Exception as e:
-
             QMessageBox.critical(
                 self,
                 "Database Error",
@@ -257,10 +255,7 @@ class DeviceFormWindow(QWidget):
 
 
 if __name__ == "__main__":
-
     import sys
-    from PySide6.QtWidgets import QApplication
-    from ispring_db.core.database import create_db_and_tables
 
     create_db_and_tables()
 

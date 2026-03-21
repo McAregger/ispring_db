@@ -91,14 +91,15 @@ class DeviceCalibrationListWindow(QWidget):
         return "..." + text[-max_length:]
 
     def load_device_calibrations(self):
-
         with get_session() as session:
             statement = (
                 select(DeviceCalibration, Device, Calibration)
                 .join(Device, DeviceCalibration.mac == Device.mac)
-                .join(Calibration, DeviceCalibration.device_cal_id == Calibration.cal_id)
+                .join(Calibration, DeviceCalibration.cal_id == Calibration.cal_id)
             )
             results = session.exec(statement).all()
+
+
 
         self.table.setRowCount(len(results))
 
@@ -175,6 +176,19 @@ class DeviceCalibrationListWindow(QWidget):
                 session.commit()
 
         self.load_device_calibrations()
+
+    def load_for_customer(self, customer_no: int) -> list[DeviceCalibration]:
+        with get_session() as session:
+            statement = (
+                select(DeviceCalibration)
+                .join(Device, DeviceCalibration.mac == Device.mac)
+                .where(Device.customer_no == customer_no)
+            )
+
+
+            return list(session.exec(statement).all())
+
+
 
 
 if __name__ == "__main__":

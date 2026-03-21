@@ -12,16 +12,17 @@ from PySide6.QtWidgets import (
     QAbstractItemView,
 
 )
-from sqlmodel import select
 
-from ispring_db.core.database import create_db_and_tables, get_session
-from ispring_db.models import Customer
+
+from ispring_db.core.database import create_db_and_tables
 from ispring_db.gui.customers.customer_form import CustomerFormWindow
+from ispring_db.services.customer_repositry import (delete_customer_with_customer_no,
+                                                    get_customer_with_customer_no,
+                                                    get_all_customers)
 
 
 class CustomerListWindow(QWidget):
     customer_selected = Signal(int)
-
 
     def __init__(self):
         super().__init__()
@@ -93,8 +94,7 @@ class CustomerListWindow(QWidget):
         self.load_customers()
 
     def load_customers(self) -> None:
-        with get_session() as session:
-            customers = session.exec(select(Customer)).all()
+        customers = get_all_customers()
 
         self.table.setRowCount(len(customers))
 
@@ -114,7 +114,7 @@ class CustomerListWindow(QWidget):
         self.table.resizeRowsToContents()
         self.table.clearSelection()
 
-    def get_selected_customer_id(self) -> int | None:
+    def get_selected_customer_no(self) -> int | None:
         row = self.table.currentRow()
 
         if row < 0:
@@ -133,12 +133,11 @@ class CustomerListWindow(QWidget):
         self.form.show()
 
     def edit_customer(self) -> None:
-        customer_id = self.get_selected_customer_id()
-        if customer_id is None:
+        customer_no = self.get_selected_customer_no()
+        if customer_no is None:
             return
 
-        with get_session() as session:
-            customer = session.get(Customer, customer_id)
+        customer = get_customer_with_customer_no(customer_no)
 
         if customer is None:
             QMessageBox.warning(self, "Error", "Customer not found.")
@@ -149,10 +148,9 @@ class CustomerListWindow(QWidget):
         self.form.show()
 
     def delete_customer(self) -> None:
-        customer_id = self.get_selected_customer_id()
-        if customer_id is None:
+        customer_no = self.get_selected_customer_no()
+        if customer_no is None:
             return
-
         row = self.table.currentRow()
         company_item = self.table.item(row, 1)
         company = company_item.text() if company_item else ""
@@ -163,21 +161,10 @@ class CustomerListWindow(QWidget):
             f"Delete '{company}'?",
             QMessageBox.Yes | QMessageBox.No,
         )
-
         if reply == QMessageBox.No:
             return
-
         try:
-            with get_session() as session:
-                customer = session.get(Customer, customer_id)
-
-                if customer is None:
-                    QMessageBox.warning(self, "Error", "Customer not found.")
-                    self.load_customers()
-                    return
-
-                session.delete(customer)
-                session.commit()
+            delete_customer_with_customer_no(customer_no)
 
             self.load_customers()
 
@@ -189,7 +176,7 @@ class CustomerListWindow(QWidget):
             )
 
     def on_selection_changed(self):
-        print("test")
+
         row = self.table.currentRow()
         if row < 0:
             return

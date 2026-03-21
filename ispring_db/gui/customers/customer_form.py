@@ -11,10 +11,9 @@ from PySide6.QtWidgets import (
     QComboBox,
 )
 
-from sqlmodel import select
 
-from ispring_db.core.database import get_session
 from ispring_db.models import Customer
+from ispring_db.services.customer_repositry import save_customer, get_customer_with_customer_no
 
 
 class CustomerFormBase(QWidget):
@@ -88,8 +87,8 @@ class CustomerFormBase(QWidget):
         self.email_input.setText(self.customer.email or "")
 
     def load_customer_by_id(self, customer_no: int) -> None:
-        with get_session() as session:
-            customer = session.get(Customer, customer_no)
+
+        customer = get_customer_with_customer_no(customer_no)
 
         self.set_customer(customer)
 
@@ -133,47 +132,27 @@ class CustomerFormWindow(CustomerFormBase):
             return
 
         try:
-            with get_session() as session:
-                if self.customer:
-                    customer = session.get(Customer, self.customer.customer_no)
-                    if customer is None:
-                        QMessageBox.critical(
-                            self,
-                            "Database Error",
-                            "Selected customer could not be found.",
-                        )
-                        return
-                else:
-                    customer = Customer()
+            customer = Customer(
+                customer_no=self.customer.customer_no if self.customer else None,
+                company=company,
+                street=self.street_input.text().strip(),
+                street_number=self.street_number_input.text().strip(),
+                postcode=self.postcode_input.text().strip(),
+                city=self.city_input.text().strip(),
+                country=self.country_input.currentText(),
+                contact_first_name=self.first_name_input.text().strip(),
+                contact_last_name=self.last_name_input.text().strip(),
+                telephone=self.telephone_input.text().strip(),
+                email=self.email_input.text().strip(),
+            )
 
-                    first_customer = session.exec(
-                        select(Customer).order_by(Customer.customer_no)
-                    ).first()
-
-                    if first_customer is None:
-                        customer.customer_no = 1111
-
-                customer.company = company
-                customer.street = self.street_input.text().strip()
-                customer.street_number = self.street_number_input.text().strip()
-                customer.postcode = self.postcode_input.text().strip()
-                customer.city = self.city_input.text().strip()
-                customer.country = self.country_input.currentText()
-                customer.contact_first_name = self.first_name_input.text().strip()
-                customer.contact_last_name = self.last_name_input.text().strip()
-                customer.telephone = self.telephone_input.text().strip()
-                customer.email = self.email_input.text().strip()
-
-                if not self.customer:
-                    session.add(customer)
-
-                session.commit()
-                session.refresh(customer)
-                self.customer = customer
+            self.customer = save_customer(customer)
 
             QMessageBox.information(self, "Success", "Customer saved.")
             self.close()
 
+        except ValueError as e:
+            QMessageBox.critical(self, "Database Error", str(e))
         except Exception as e:
             QMessageBox.critical(
                 self,

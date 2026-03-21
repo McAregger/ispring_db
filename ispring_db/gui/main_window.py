@@ -27,10 +27,12 @@ from ispring_db.gui.customers.customer_form import CustomerFormDisplay
 from ispring_db.gui.devices.device_list import DeviceListWindow
 from ispring_db.gui.devices.device_list import DeviceListDisplay
 from ispring_db.gui.gateways.gateway_list import GatewayListWindow
+from ispring_db.gui.gateways.gateway_list import GatewayListDisplay
 from ispring_db.gui.calibrations.calibration_list import CalibrationListWindow
 from ispring_db.gui.errors.error_list import ErrorListWindow
 from ispring_db.gui.device_calibrations.device_calibration_list import DeviceCalibrationListWindow
 from ispring_db.gui.device_errors.device_error_list import DeviceErrorListWindow
+from ispring_db.gui.logs.log_list import LogListWindow
 
 
 class MainWindow(QMainWindow):
@@ -64,7 +66,7 @@ class MainWindow(QMainWindow):
             pixmap = QPixmap(str(logo_path))
             self.logo_label.setPixmap(pixmap)
         else:
-            self.logo_label.setText("Company Logo")
+            self.logo_label.setText("ispring Logo")
 
         main_layout.addWidget(self.logo_label)
 
@@ -106,7 +108,7 @@ class MainWindow(QMainWindow):
         self.customer_tabs = QTabWidget()
 
         self.customer_device_list = DeviceListDisplay()
-        self.customer_gateway_list = GatewayListWindow()
+        self.customer_gateway_list = GatewayListDisplay()
         self.customer_device_calibration_list = DeviceCalibrationListWindow()
         self.customer_device_error_list = DeviceErrorListWindow()
 
@@ -140,6 +142,7 @@ class MainWindow(QMainWindow):
 
         self.customer_list_page = CustomerListWindow()
         self.device_list_page = DeviceListWindow()
+        self.log_list_page = LogListWindow()
         self.gateway_list_page = GatewayListWindow()
         self.calibration_list_page = CalibrationListWindow()
         self.error_list_page = ErrorListWindow()
@@ -149,6 +152,7 @@ class MainWindow(QMainWindow):
         self.pages = [
             ("Customers", self.customer_list_page),
             ("Devices", self.device_list_page),
+            ("Device Log", self.log_list_page),
             ("Gateways", self.gateway_list_page),
             ("Calibrations", self.calibration_list_page),
             ("Errors", self.error_list_page),
@@ -168,7 +172,6 @@ class MainWindow(QMainWindow):
         self.search_button.clicked.connect(self.perform_search)
         self.reset_button.clicked.connect(self.reset_search)
         self.search_input.returnPressed.connect(self.perform_search)
-
 
         self.customer_list_page.customer_selected.connect(self.load_customer_details)
 
@@ -213,18 +216,19 @@ class MainWindow(QMainWindow):
             page.apply_filter("")
 
     def load_customer_details(self, customer_no: int) -> None:
-        print("test1")
+
+
         if hasattr(self.customer_form, "load_customer"):
             self.customer_form.load_customer_by_id(customer_no)
 
         if hasattr(self.customer_device_list, "load_for_customer"):
-
             self.customer_device_list.load_for_customer(customer_no)
 
         if hasattr(self.customer_gateway_list, "load_for_customer"):
             self.customer_gateway_list.load_for_customer(customer_no)
 
         if hasattr(self.customer_device_calibration_list, "load_for_customer"):
+            print("Device Calibration loaded")
             self.customer_device_calibration_list.load_for_customer(customer_no)
 
         if hasattr(self.customer_device_error_list, "load_for_customer"):

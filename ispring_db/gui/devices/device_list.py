@@ -1,6 +1,6 @@
 from __future__ import annotations
-
-from PySide6.QtCore import Qt
+from datetime import date
+from PySide6.QtCore import Qt, QTimer, QDate
 from PySide6.QtWidgets import (
     QApplication,
     QWidget,
@@ -19,6 +19,8 @@ from sqlmodel import select
 from ispring_db.core.database import create_db_and_tables, get_session
 from ispring_db.models import Device, Customer
 from ispring_db.gui.devices.device_form import DeviceFormWindow
+from ispring_db.services.device_repositry import get_all_devices
+from ispring_db.services.customer_repositry import get_customer_with_customer_no
 
 
 class DeviceListBase(QWidget):
@@ -26,7 +28,7 @@ class DeviceListBase(QWidget):
         super().__init__(parent)
 
         self.table = QTableWidget()
-        self.table.setColumnCount(10)
+        self.table.setColumnCount(11)
         self.table.setHorizontalHeaderLabels(
             [
                 "MAC",
@@ -36,10 +38,10 @@ class DeviceListBase(QWidget):
                 "BLE Antenna",
                 "Circuit Diagram No",
                 "Revision",
-                "Assembly Plan"
+                "Assembly Plan",
                 "Bridge Layout",
                 "Batch No",
-                "Description"
+                "Description",
             ]
         )
 
@@ -49,52 +51,78 @@ class DeviceListBase(QWidget):
         self.table.setWordWrap(False)
         self.table.setTextElideMode(Qt.ElideRight)
 
-        header = self.table.horizontalHeader()
-        header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(1, QHeaderView.Stretch)
-        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(3, QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(4, QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(5, QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(6, QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(7, QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(8, QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(9, QHeaderView.Stretch)
-
         self.main_layout = QVBoxLayout()
         self.main_layout.addWidget(self.table)
         self.setLayout(self.main_layout)
 
+    def apply_resize(self) -> None:
+        header = self.table.horizontalHeader()
+
+        self.table.resizeColumnsToContents()
+
+        header.setSectionResizeMode(0, QHeaderView.ResizeToContents)   # MAC
+        header.setSectionResizeMode(1, QHeaderView.Stretch)            # Customer
+        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)   # Manufacturing Date
+        header.setSectionResizeMode(3, QHeaderView.ResizeToContents)   # DMS
+        header.setSectionResizeMode(4, QHeaderView.ResizeToContents)   # BLE Antenna
+        header.setSectionResizeMode(5, QHeaderView.ResizeToContents)   # Circuit Diagram No
+        header.setSectionResizeMode(6, QHeaderView.ResizeToContents)   # Revision
+        header.setSectionResizeMode(7, QHeaderView.ResizeToContents)   # Assembly Plan
+        header.setSectionResizeMode(8, QHeaderView.ResizeToContents)   # Bridge Layout
+        header.setSectionResizeMode(9, QHeaderView.ResizeToContents)   # Batch No
+        header.setSectionResizeMode(10, QHeaderView.Stretch)           # Description
+
+        min_widths = [150, 180, 140, 130, 120, 150, 90, 130, 130, 100, 200]
+
+        for col, min_w in enumerate(min_widths):
+            if self.table.columnWidth(col) < min_w:
+                self.table.setColumnWidth(col, min_w)
+
     def refresh_data(self) -> None:
-        with get_session() as session:
-            devices = session.exec(select(Device)).all()
 
-        self._fill_table(devices)
+        devices = get_all_devices()
+        self.load_devices(devices)
+        QTimer.singleShot(0, self.apply_resize)
 
-    def _fill_table(self, devices: list[Device]) -> None:
+    def load_devices(self, devices: list[Device]) -> None:
         self.table.setRowCount(len(devices))
 
-        with get_session() as session:
-            for row, d in enumerate(devices):
-                customer_text = ""
-                if getattr(d, "customer_no", None) is not None:
-                    customer = session.get(Customer, d.customer_no)
-                    if customer:
-                        customer_text = customer.company or str(customer.customer_no)
-                    else:
-                        customer_text = str(d.customer_no)
 
-                self.table.setItem(row, 0, QTableWidgetItem(str(getattr(d, "mac", "") or "")))
+        for row, device in enumerate(devices):
+            customer_text = ""
+            if getattr(device, "customer_no", None) is not None:
+                with get_session() as session:
+                    customer = get_customer_with_customer_no(device.customer_no)
+                if customer:
+                    customer_text = customer.company or str(customer.customer_no)
+                else:
+                    customer_text = str(device.customer_no)
+
+                #Datum Konfigurieren
+                value = getattr(device, "manufacturing_date", None)
+                if value:
+                    if isinstance(value, str):
+                        qdate = QDate.fromString(value, "yyyy-MM-dd")
+                        date_string = qdate.toString("dd.MM.yyyy") if qdate.isValid() else value
+                    elif isinstance(value, date):
+                        date_string = value.strftime("%d.%m.%Y")
+                    else:
+                        text = str(value)
+                else:
+                    date_string = ""
+
+
+                self.table.setItem(row, 0, QTableWidgetItem(str(getattr(device, "mac", "") or "")))
                 self.table.setItem(row, 1, QTableWidgetItem(customer_text))
-                self.table.setItem(row, 2, QTableWidgetItem(str(getattr(d, "manufacturing_date", "") or "")))
-                self.table.setItem(row, 3, QTableWidgetItem(str(getattr(d, "dms", "") or "")))
-                self.table.setItem(row, 4, QTableWidgetItem(str(getattr(d, "ble_antenna", "") or "")))
-                self.table.setItem(row, 5, QTableWidgetItem(str(getattr(d, "circuit_diagram_no", "") or "")))
-                self.table.setItem(row, 6, QTableWidgetItem(str(getattr(d, "revision", "") or "")))
-                self.table.setItem(row, 7, QTableWidgetItem(str(getattr(d, "assembly_plan", "") or "")))
-                self.table.setItem(row, 8, QTableWidgetItem(str(getattr(d, "bridge_layout", "") or "")))
-                self.table.setItem(row, 9, QTableWidgetItem(str(getattr(d, "batch_no", "") or "")))
-                self.table.setItem(row, 9, QTableWidgetItem(str(getattr(d, "description", "") or "")))
+                self.table.setItem(row, 2, QTableWidgetItem(date_string))
+                self.table.setItem(row, 3, QTableWidgetItem(str(getattr(device, "dms", "") or "")))
+                self.table.setItem(row, 4, QTableWidgetItem(str(getattr(device, "ble_antenna", "") or "")))
+                self.table.setItem(row, 5, QTableWidgetItem(str(getattr(device, "circuit_diagram_no", "") or "")))
+                self.table.setItem(row, 6, QTableWidgetItem(str(getattr(device, "revision", "") or "")))
+                self.table.setItem(row, 7, QTableWidgetItem(str(getattr(device, "assembly_plan", "") or "")))
+                self.table.setItem(row, 8, QTableWidgetItem(str(getattr(device, "bridge_layout", "") or "")))
+                self.table.setItem(row, 9, QTableWidgetItem(str(getattr(device, "batch_no", "") or "")))
+                self.table.setItem(row, 10, QTableWidgetItem(str(getattr(device, "description", "") or "")))
 
         self.table.resizeRowsToContents()
         self.table.clearSelection()
@@ -139,6 +167,8 @@ class DeviceListWindow(DeviceListBase):
 
         self.setWindowTitle("Devices")
         self.resize(1100, 600)
+
+        self.form = None
 
         self.new_button = QPushButton("New")
         self.edit_button = QPushButton("Edit")
@@ -225,17 +255,37 @@ class DeviceListDisplay(DeviceListBase):
         self.setWindowTitle("Devices")
         self.table.setRowCount(0)
 
+    def apply_resize(self) -> None:
+        header = self.table.horizontalHeader()
+
+        self.table.resizeColumnsToContents()
+
+        for col in range(self.table.columnCount()):
+            header.setSectionResizeMode(col, QHeaderView.ResizeToContents)
+
+        header.setSectionResizeMode(10, QHeaderView.Interactive)
+
+        min_widths = [150, 140, 140, 130, 120, 150, 90, 130, 130, 100, 180]
+
+        for col, min_w in enumerate(min_widths):
+            if self.table.columnWidth(col) < min_w:
+                self.table.setColumnWidth(col, min_w)
+
     def load_for_customer(self, customer_no: int) -> None:
         with get_session() as session:
             devices = session.exec(
                 select(Device).where(Device.customer_no == customer_no)
             ).all()
 
-        self._fill_table(devices)
+
+        self.load_devices(devices)
+        QTimer.singleShot(0, self.apply_resize)
 
     def clear_data(self) -> None:
         self.table.setRowCount(0)
+        self.table.clearContents()
         self.table.clearSelection()
+        QTimer.singleShot(0, self.apply_resize)
 
 
 if __name__ == "__main__":

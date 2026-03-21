@@ -5,6 +5,7 @@ from .gateway import Gateway
 from .device_calibration import DeviceCalibration
 from .device_error import DeviceError
 from .error import Error
+from .logbook import Logbook
 
 __all__ = [
     "Calibration",
@@ -13,4 +14,5 @@ __all__ = [
     "DeviceCalibration",
     "DeviceError",
     "Error",
+    "Logbook",
 ]

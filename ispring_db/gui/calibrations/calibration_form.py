@@ -12,8 +12,9 @@ from PySide6.QtWidgets import (
     QComboBox,
 )
 
-from ispring_db.core.database import get_session
+
 from ispring_db.models import Calibration
+from ispring_db.services.calibration_repositry import save_calibration
 
 
 class CalibrationFormWindow(QWidget):
@@ -98,7 +99,6 @@ class CalibrationFormWindow(QWidget):
         self.cal_def_file_input.setText(self.calibration.cal_def_file)
 
     def save_calibration(self):
-
         calibration_type = self.type_input.currentText()
 
         min_temp_text = self.min_temp_input.text().strip()
@@ -128,36 +128,27 @@ class CalibrationFormWindow(QWidget):
             return
 
         try:
+            calibration = Calibration(
+                cal_id=self.calibration.cal_id if self.calibration else None,
+                cal_type=calibration_type,
+                min_temp=min_temp,
+                max_temp=max_temp,
+                cal_def_date=self.cal_def_date_input.date().toPython(),
+                cal_def_file=cal_def_file,
+            )
 
-            with get_session() as session:
+            self.calibration = save_calibration(calibration)
 
-                if self.calibration:
-                    calibration = session.get(Calibration, self.calibration.cal_id)
-                else:
-                    calibration = Calibration()
-
-                calibration.cal_type = calibration_type
-                calibration.min_temp = min_temp
-                calibration.max_temp = max_temp
-                calibration.cal_def_date = self.cal_def_date_input.date().toPython()
-                calibration.cal_def_file = cal_def_file
-
-                if not self.calibration:
-                    session.add(calibration)
-
-                session.commit()
 
             QMessageBox.information(self, "Success", "Calibration saved.")
             self.close()
 
         except Exception as e:
-
             QMessageBox.critical(
                 self,
                 "Database Error",
                 f"Could not save calibration:\n{e}",
             )
-
 
 if __name__ == "__main__":
 
