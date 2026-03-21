@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
 
 from ispring_db.core.database import create_db_and_tables
 from ispring_db.gui.customers.customer_form import CustomerFormWindow
-from ispring_db.services.customer_repositry import (delete_customer_with_customer_no,
+from ispring_db.services.customer_repository import (delete_customer_with_customer_no,
                                                     get_customer_with_customer_no,
                                                     get_all_customers)
 

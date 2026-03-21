@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
 
 
 from ispring_db.models import Customer
-from ispring_db.services.customer_repositry import save_customer, get_customer_with_customer_no
+from ispring_db.services.customer_repository import save_customer, get_customer_with_customer_no
 
 
 class CustomerFormBase(QWidget):

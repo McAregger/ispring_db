@@ -19,8 +19,8 @@ from sqlmodel import select
 from ispring_db.core.database import create_db_and_tables, get_session
 from ispring_db.models import Device, Customer
 from ispring_db.gui.devices.device_form import DeviceFormWindow
-from ispring_db.services.device_repositry import get_all_devices
-from ispring_db.services.customer_repositry import get_customer_with_customer_no
+from ispring_db.services.device_repository import get_all_devices
+from ispring_db.services.customer_repository import get_customer_with_customer_no
 
 
 class DeviceListBase(QWidget):

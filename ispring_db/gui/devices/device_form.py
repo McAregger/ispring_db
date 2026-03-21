@@ -1,6 +1,6 @@
 import re
 from datetime import date
-from ispring_db.services.customer_repositry import get_all_customers
+from ispring_db.services.customer_repository import get_all_customers
 
 from PySide6.QtCore import QDate
 from PySide6.QtWidgets import (
