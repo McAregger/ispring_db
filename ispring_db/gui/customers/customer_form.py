@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
 
 
 from ispring_db.models import Customer
-from ispring_db.services.customer_repository import save_customer, get_customer_with_customer_no
+from ispring_db.services.customer_repository import save_customer, get_customer_by_customer_no
 
 
 class CustomerFormBase(QWidget):
@@ -88,7 +88,7 @@ class CustomerFormBase(QWidget):
 
     def load_customer_by_id(self, customer_no: int) -> None:
 
-        customer = get_customer_with_customer_no(customer_no)
+        customer = get_customer_by_customer_no(customer_no)
 
         self.set_customer(customer)
 

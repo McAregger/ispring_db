@@ -49,22 +49,7 @@ def save_calibration(calibration: Calibration) -> Calibration:
         return db_obj
 
 
-def get_device_calibrations_by_customer(customer_no: int) -> list[DeviceCalibration]:
-    with get_session() as session:
-        statement = (
-            select(DeviceCalibration)
-            .join(Device, DeviceCalibration.mac == Device.mac)
-            .where(Device.customer_no == customer_no)
-        )
 
-        return list(session.exec(statement).all())
-
-if __name__ == "__main__":
-
-    from ispring_db.core.database import create_db_and_tables
-
-    create_db_and_tables()
-    print(get_device_calibrations_by_customer(1))
 
 
 

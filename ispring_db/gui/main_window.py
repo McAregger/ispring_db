@@ -30,7 +30,8 @@ from ispring_db.gui.gateways.gateway_list import GatewayListWindow
 from ispring_db.gui.gateways.gateway_list import GatewayListDisplay
 from ispring_db.gui.calibrations.calibration_list import CalibrationListWindow
 from ispring_db.gui.errors.error_list import ErrorListWindow
-from ispring_db.gui.device_calibrations.device_calibration_list import DeviceCalibrationListWindow
+from ispring_db.gui.device_calibrations.device_calibration_list import (DeviceCalibrationListWindow,
+                                                                        DeviceCalibrationListDisplay)
 from ispring_db.gui.device_errors.device_error_list import DeviceErrorListWindow
 from ispring_db.gui.logs.log_list import LogListWindow
 
@@ -109,7 +110,7 @@ class MainWindow(QMainWindow):
 
         self.customer_device_list = DeviceListDisplay()
         self.customer_gateway_list = GatewayListDisplay()
-        self.customer_device_calibration_list = DeviceCalibrationListWindow()
+        self.customer_device_calibration_list = DeviceCalibrationListDisplay()
         self.customer_device_error_list = DeviceErrorListWindow()
 
         self.customer_tabs.addTab(self.customer_device_list, "Devices")

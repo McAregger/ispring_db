@@ -16,9 +16,9 @@ from PySide6.QtWidgets import (
 
 from ispring_db.core.database import create_db_and_tables
 from ispring_db.gui.customers.customer_form import CustomerFormWindow
-from ispring_db.services.customer_repository import (delete_customer_with_customer_no,
-                                                    get_customer_with_customer_no,
-                                                    get_all_customers)
+from ispring_db.services.customer_repository import (delete_customer_by_customer_no,
+                                                     get_customer_by_customer_no,
+                                                     get_all_customers)
 
 
 class CustomerListWindow(QWidget):
@@ -137,7 +137,7 @@ class CustomerListWindow(QWidget):
         if customer_no is None:
             return
 
-        customer = get_customer_with_customer_no(customer_no)
+        customer = get_customer_by_customer_no(customer_no)
 
         if customer is None:
             QMessageBox.warning(self, "Error", "Customer not found.")
@@ -164,7 +164,7 @@ class CustomerListWindow(QWidget):
         if reply == QMessageBox.No:
             return
         try:
-            delete_customer_with_customer_no(customer_no)
+            delete_customer_by_customer_no(customer_no)
 
             self.load_customers()
 

@@ -14,13 +14,16 @@ from PySide6.QtWidgets import (
     QAbstractItemView,
 )
 
-from sqlmodel import select
 
-from ispring_db.core.database import create_db_and_tables, get_session
-from ispring_db.models import Device, Customer
+
+from ispring_db.core.database import create_db_and_tables
+from ispring_db.models import Device
 from ispring_db.gui.devices.device_form import DeviceFormWindow
-from ispring_db.services.device_repository import get_all_devices
-from ispring_db.services.customer_repository import get_customer_with_customer_no
+from ispring_db.services.device_repository import (get_all_devices,
+                                                   get_devices_by_customer_no,
+                                                   delete_device_by_mac,
+                                                   get_device_by_mac)
+from ispring_db.services.customer_repository import get_customer_by_customer_no
 
 
 class DeviceListBase(QWidget):
@@ -91,8 +94,8 @@ class DeviceListBase(QWidget):
         for row, device in enumerate(devices):
             customer_text = ""
             if getattr(device, "customer_no", None) is not None:
-                with get_session() as session:
-                    customer = get_customer_with_customer_no(device.customer_no)
+
+                customer = get_customer_by_customer_no(device.customer_no)
                 if customer:
                     customer_text = customer.company or str(customer.customer_no)
                 else:
@@ -200,8 +203,7 @@ class DeviceListWindow(DeviceListBase):
         if mac is None:
             return
 
-        with get_session() as session:
-            device = session.get(Device, mac)
+        device = get_device_by_mac(mac)
 
         if device is None:
             QMessageBox.warning(self, "Error", "Device not found.")
@@ -228,16 +230,11 @@ class DeviceListWindow(DeviceListBase):
             return
 
         try:
-            with get_session() as session:
-                device = session.get(Device, mac)
-
-                if device is None:
-                    QMessageBox.warning(self, "Error", "Device not found.")
-                    self.refresh_data()
-                    return
-
-                session.delete(device)
-                session.commit()
+            success = delete_device_by_mac(mac)
+            if not success:
+                QMessageBox.warning(self, "Error", "Device not found.")
+                self.refresh_data()
+                return
 
             self.refresh_data()
 
@@ -272,11 +269,8 @@ class DeviceListDisplay(DeviceListBase):
                 self.table.setColumnWidth(col, min_w)
 
     def load_for_customer(self, customer_no: int) -> None:
-        with get_session() as session:
-            devices = session.exec(
-                select(Device).where(Device.customer_no == customer_no)
-            ).all()
 
+        devices = get_devices_by_customer_no(customer_no)
 
         self.load_devices(devices)
         QTimer.singleShot(0, self.apply_resize)

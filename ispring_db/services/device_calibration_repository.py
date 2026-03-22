@@ -1,12 +1,31 @@
-from ispring_db.models import DeviceCalibration, device_calibration
-from ispring_db.core.database import get_session
 from sqlmodel import select
-
 from ispring_db.core.database import get_session
-from ispring_db.models import DeviceCalibration
+from ispring_db.models import DeviceCalibration, Device, Calibration
+
+def get_all_device_calibrations(
+) -> list[tuple[DeviceCalibration, Device, Calibration]]:
+    with get_session() as session:
+        statement = (
+            select(DeviceCalibration, Device, Calibration)
+            .join(Device, DeviceCalibration.mac == Device.mac)
+            .join(Calibration, DeviceCalibration.cal_id == Calibration.cal_id)
+        )
+        return list(session.exec(statement).all())
+
+def get_device_calibrations_by_customer_no(
+    customer_no: int,
+) -> list[tuple[DeviceCalibration, Device, Calibration]]:
+    with get_session() as session:
+        statement = (
+            select(DeviceCalibration, Device, Calibration)
+            .join(Device, DeviceCalibration.mac == Device.mac)
+            .join(Calibration, DeviceCalibration.cal_id == Calibration.cal_id)
+            .where(Device.customer_no == customer_no)
+        )
+        return list(session.exec(statement).all())
 
 
-def get_device_calibration_with_device_cal_id(device_cal_id: int):
+def get_device_calibration_by_device_cal_id(device_cal_id: int):
     with get_session() as session:
         return session.get(DeviceCalibration, device_cal_id)
 
@@ -35,3 +54,31 @@ def save_device_calibration(device_calibration: DeviceCalibration) -> DeviceCali
         session.commit()
         session.refresh(db_obj)
         return db_obj
+
+
+
+def load_device_calibrations() -> list[tuple[DeviceCalibration, Device, Calibration]]:
+    with get_session() as session:
+        statement = (
+            select(DeviceCalibration, Device, Calibration)
+            .join(Device, DeviceCalibration.mac == Device.mac)
+            .join(Calibration, DeviceCalibration.cal_id == Calibration.cal_id)
+        )
+        return session.exec(statement).all()
+
+def delete_device_calibration(device_cal_id: int) -> bool:
+    with get_session() as session:
+        device_calibration = session.get(DeviceCalibration, device_cal_id)
+        if device_calibration is None:
+            return False
+        session.delete(device_calibration)
+        session.commit()
+        return True
+
+
+
+if __name__ == "__main__":
+
+    from ispring_db.core.database import create_db_and_tables
+    create_db_and_tables()
+    print(get_device_calibrations_by_customer(1))

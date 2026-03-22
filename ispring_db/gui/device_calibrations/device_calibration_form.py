@@ -17,7 +17,7 @@ from ispring_db.models import DeviceCalibration
 from ispring_db.services.device_repository import get_all_devices
 from ispring_db.services.calibration_repository import get_all_calibrations
 from ispring_db.services.device_calibration_repository import (
-    get_device_calibration_with_device_cal_id,
+    get_device_calibration_by_device_cal_id,
     save_device_calibration as save_device_calibration_record,
 )
 
@@ -175,7 +175,7 @@ class DeviceCalibrationFormWindow(QWidget):
 
         try:
             if self.device_calibration:
-                dc = get_device_calibration_with_device_cal_id(
+                dc = get_device_calibration_by_device_cal_id(
                     self.device_calibration.device_cal_id
                 )
                 if dc is None:

@@ -11,10 +11,12 @@ from PySide6.QtWidgets import (
     QDateEdit,
 )
 
-from sqlmodel import select
+
 
 from ispring_db.core.database import get_session
-from ispring_db.models import DeviceError, Device, Error
+from ispring_db.models import DeviceError
+from ispring_db.services.error_repository import get_all_errors
+from ispring_db.services.device_repository import get_all_devices
 
 
 class DeviceErrorFormWindow(QWidget):
@@ -68,8 +70,7 @@ class DeviceErrorFormWindow(QWidget):
 
     def load_devices(self):
 
-        with get_session() as session:
-            devices = session.exec(select(Device)).all()
+        devices = get_all_devices()
 
         self.device_input.clear()
         self.device_map = {}
@@ -81,9 +82,8 @@ class DeviceErrorFormWindow(QWidget):
 
     def load_errors(self):
 
-        with get_session() as session:
-            errors = session.exec(select(Error)).all()
 
+        errors = get_all_errors()
         self.error_input.clear()
         self.error_map = {}
 

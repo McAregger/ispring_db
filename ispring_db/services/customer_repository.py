@@ -7,22 +7,16 @@ def get_all_customers():
         customers = session.exec(select(Customer)).all()
         return customers
 
-def get_customer_with_customer_no(customer_no):
+def get_customer_by_customer_no(customer_no):
     with get_session() as session:
         customer = session.get(Customer, customer_no)
         return customer
 
-def delete_customer_with_customer_no(costumer_no):
+def delete_customer_by_customer_no(costumer_no):
     with get_session() as session:
-        customer = get_customer_with_customer_no(costumer_no)
+        customer = get_customer_by_customer_no(costumer_no)
         session.delete(customer)
         session.commit()
-
-from sqlmodel import select
-
-from ispring_db.core.database import get_session
-from ispring_db.models import Customer
-
 
 def save_customer(customer: Customer) -> Customer:
     with get_session() as session:

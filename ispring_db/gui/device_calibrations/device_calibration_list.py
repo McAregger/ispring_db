@@ -8,20 +8,25 @@ from PySide6.QtWidgets import (
     QTableWidgetItem,
     QMessageBox,
     QHeaderView,
-    QAbstractItemView,
+    QAbstractItemView, QMainWindow,
 )
 
 from sqlmodel import select
 
-from ispring_db.core.database import get_session, create_db_and_tables
+from ispring_db.core.database import create_db_and_tables
 from ispring_db.models import DeviceCalibration, Device, Calibration
 from ispring_db.gui.device_calibrations.device_calibration_form import DeviceCalibrationFormWindow
+from ispring_db.services.device_calibration_repository import (
+    get_device_calibrations_by_customer_no,
+    get_device_calibration_by_device_cal_id,
+    delete_device_calibration,
+    get_all_device_calibrations)
 
 
-class DeviceCalibrationListWindow(QWidget):
+class DeviceCalibrationListBase(QWidget):
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent)
 
         self.setWindowTitle("Device Calibrations")
         self.resize(1500, 600)
@@ -59,29 +64,11 @@ class DeviceCalibrationListWindow(QWidget):
         header.setSectionResizeMode(7, QHeaderView.ResizeToContents)
         header.setSectionResizeMode(8, QHeaderView.ResizeToContents)
 
-        self.new_button = QPushButton("New")
-        self.edit_button = QPushButton("Edit")
-        self.delete_button = QPushButton("Delete")
-        self.refresh_button = QPushButton("Refresh")
+        self.layout = QVBoxLayout()
+        self.layout.addWidget(self.table)
+        self.setLayout(self.layout)
 
-        self.new_button.clicked.connect(self.new_device_calibration)
-        self.edit_button.clicked.connect(self.edit_device_calibration)
-        self.delete_button.clicked.connect(self.delete_device_calibration)
-        self.refresh_button.clicked.connect(self.load_device_calibrations)
 
-        buttons = QHBoxLayout()
-        buttons.addWidget(self.new_button)
-        buttons.addWidget(self.edit_button)
-        buttons.addWidget(self.delete_button)
-        buttons.addWidget(self.refresh_button)
-
-        layout = QVBoxLayout()
-        layout.addWidget(self.table)
-        layout.addLayout(buttons)
-
-        self.setLayout(layout)
-
-        self.load_device_calibrations()
 
     def shorten_left(self, text: str, max_length: int = 50) -> str:
         if not text:
@@ -90,20 +77,11 @@ class DeviceCalibrationListWindow(QWidget):
             return text
         return "..." + text[-max_length:]
 
-    def load_device_calibrations(self):
-        with get_session() as session:
-            statement = (
-                select(DeviceCalibration, Device, Calibration)
-                .join(Device, DeviceCalibration.mac == Device.mac)
-                .join(Calibration, DeviceCalibration.cal_id == Calibration.cal_id)
-            )
-            results = session.exec(statement).all()
+    def load_device_calibrations(self, device_calibrations: list[tuple[DeviceCalibration, Device, Calibration]]) -> None:
 
+        self.table.setRowCount(len(device_calibrations))
 
-
-        self.table.setRowCount(len(results))
-
-        for row, (dc, device, calibration) in enumerate(results):
+        for row, (dc, device, calibration) in enumerate(device_calibrations):
 
             calibration_text = f"{calibration.cal_id} - {calibration.cal_type}"
             filepath_display = self.shorten_left(dc.device_cal_filepath_tdms, 50)
@@ -121,6 +99,10 @@ class DeviceCalibrationListWindow(QWidget):
 
             self.table.setItem(row, 7, QTableWidgetItem(dc.device_cal_total_error))
             self.table.setItem(row, 8, QTableWidgetItem(dc.device_cal_station))
+
+    def refresh_data(self) -> None:
+        device_calibrations = get_all_device_calibrations()
+        self.load_device_calibrations(device_calibrations)
 
     def get_selected_device_cal_id(self):
 
@@ -144,8 +126,8 @@ class DeviceCalibrationListWindow(QWidget):
         if device_cal_id is None:
             return
 
-        with get_session() as session:
-            device_calibration = session.get(DeviceCalibration, device_cal_id)
+
+        device_calibration = get_device_calibration_by_device_cal_id(device_cal_id)
 
         self.form = DeviceCalibrationFormWindow(device_calibration)
         self.form.show()
@@ -167,28 +149,49 @@ class DeviceCalibrationListWindow(QWidget):
         if reply == QMessageBox.No:
             return
 
-        with get_session() as session:
 
-            device_calibration = session.get(DeviceCalibration, device_cal_id)
+        success = delete_device_calibration(device_cal_id)
 
-            if device_calibration:
-                session.delete(device_calibration)
-                session.commit()
-
-        self.load_device_calibrations()
-
-    def load_for_customer(self, customer_no: int) -> list[DeviceCalibration]:
-        with get_session() as session:
-            statement = (
-                select(DeviceCalibration)
-                .join(Device, DeviceCalibration.mac == Device.mac)
-                .where(Device.customer_no == customer_no)
-            )
+        self.refresh_data()
 
 
-            return list(session.exec(statement).all())
+class DeviceCalibrationListWindow(DeviceCalibrationListBase):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Device Calibrations")
+        self.resize(1100, 600)
 
+        self.form = None
 
+        self.new_button = QPushButton("New")
+        self.edit_button = QPushButton("Edit")
+        self.delete_button = QPushButton("Delete")
+        self.refresh_button = QPushButton("Refresh")
+
+        self.new_button.clicked.connect(self.new_device_calibration)
+        self.edit_button.clicked.connect(self.edit_device_calibration)
+        self.delete_button.clicked.connect(self.delete_device_calibration)
+        self.refresh_button.clicked.connect(self.refresh_data)
+
+        buttons = QHBoxLayout()
+        buttons.addWidget(self.new_button)
+        buttons.addWidget(self.edit_button)
+        buttons.addWidget(self.delete_button)
+        buttons.addWidget(self.refresh_button)
+
+        self.layout.addLayout(buttons)
+
+        self.refresh_data()
+
+class DeviceCalibrationListDisplay(DeviceCalibrationListBase):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("DeviceCalibrations")
+        self.table.setRowCount(0)
+
+    def load_for_customer(self, customer_no: int) -> None:
+        device_calibrations = get_device_calibrations_by_customer_no(customer_no)
+        self.load_device_calibrations(device_calibrations)
 
 
 if __name__ == "__main__":
