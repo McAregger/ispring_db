@@ -17,7 +17,6 @@ from ispring_db.gui.errors.error_form import ErrorFormWindow
 from ispring_db.services.error_repository import get_all_errors, get_error_by_error_id, delete_error_by_error_id
 
 
-
 class ErrorListWindow(QWidget):
 
     def __init__(self):
