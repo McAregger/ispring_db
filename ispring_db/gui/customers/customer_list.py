@@ -32,6 +32,7 @@ class CustomerListWindow(QWidget):
 
         self.table = QTableWidget()
         self.table.setColumnCount(11)
+        self.table.setSortingEnabled(True)
 
         self.table.setHorizontalHeaderLabels(
             [

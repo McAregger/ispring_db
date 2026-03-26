@@ -11,24 +11,27 @@ from PySide6.QtWidgets import (
     QAbstractItemView,
 )
 
-from sqlmodel import select
-
-from ispring_db.core.database import get_session, create_db_and_tables
-from ispring_db.models import DeviceError, Device, Error
+from ispring_db.core.database import create_db_and_tables
+from ispring_db.models import DeviceError
 from ispring_db.gui.device_errors.device_error_form import DeviceErrorFormWindow
+from ispring_db.services.device_error_repository import (
+    get_all_device_errors,
+    get_device_errors_by_customer_no,
+    get_device_error_by_device_error_id,
+    delete_device_error_by_id,
+)
 
 
-class DeviceErrorListWindow(QWidget):
-
-    def __init__(self):
-        super().__init__()
+class DeviceErrorListBase(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
 
         self.setWindowTitle("Device Errors")
         self.resize(1400, 600)
 
         self.table = QTableWidget()
-
         self.table.setColumnCount(7)
+        self.table.setSortingEnabled(True)
         self.table.setHorizontalHeaderLabels(
             [
                 "ID",
@@ -53,43 +56,20 @@ class DeviceErrorListWindow(QWidget):
         header.setSectionResizeMode(5, QHeaderView.ResizeToContents)
         header.setSectionResizeMode(6, QHeaderView.Stretch)
 
-        self.new_button = QPushButton("New")
-        self.edit_button = QPushButton("Edit")
-        self.delete_button = QPushButton("Delete")
-        self.refresh_button = QPushButton("Refresh")
+        self.layout = QVBoxLayout()
+        self.layout.addWidget(self.table)
+        self.setLayout(self.layout)
 
-        self.new_button.clicked.connect(self.new_device_error)
-        self.edit_button.clicked.connect(self.edit_device_error)
-        self.delete_button.clicked.connect(self.delete_device_error)
-        self.refresh_button.clicked.connect(self.load_device_errors)
+        self.refresh_data()
 
-        buttons = QHBoxLayout()
-        buttons.addWidget(self.new_button)
-        buttons.addWidget(self.edit_button)
-        buttons.addWidget(self.delete_button)
-        buttons.addWidget(self.refresh_button)
+    def refresh_data(self):
+        device_errors = get_all_device_errors()
+        self.load_device_errors(device_errors)
 
-        layout = QVBoxLayout()
-        layout.addWidget(self.table)
-        layout.addLayout(buttons)
+    def load_device_errors(self, device_errors: list[tuple[DeviceError, object, object]]):
+        self.table.setRowCount(len(device_errors))
 
-        self.setLayout(layout)
-
-        self.load_device_errors()
-
-    def load_device_errors(self):
-
-        with get_session() as session:
-            statement = (
-                select(DeviceError, Device, Error)
-                .join(Device, DeviceError.mac == Device.mac)
-                .join(Error, DeviceError.error_id == Error.error_id)
-            )
-            results = session.exec(statement).all()
-
-        self.table.setRowCount(len(results))
-
-        for row, (device_error, device, error) in enumerate(results):
+        for row, (device_error, device, error) in enumerate(device_errors):
             self.table.setItem(row, 0, QTableWidgetItem(str(device_error.device_error_id)))
             self.table.setItem(row, 1, QTableWidgetItem(device.mac))
             self.table.setItem(row, 2, QTableWidgetItem(str(error.error_id)))
@@ -99,7 +79,6 @@ class DeviceErrorListWindow(QWidget):
             self.table.setItem(row, 6, QTableWidgetItem(device_error.device_error_description or ""))
 
     def get_selected_device_error_id(self):
-
         row = self.table.currentRow()
 
         if row < 0:
@@ -109,25 +88,25 @@ class DeviceErrorListWindow(QWidget):
         return int(self.table.item(row, 0).text())
 
     def new_device_error(self):
-
         self.form = DeviceErrorFormWindow()
         self.form.show()
 
     def edit_device_error(self):
-
         device_error_id = self.get_selected_device_error_id()
 
         if device_error_id is None:
             return
 
-        with get_session() as session:
-            device_error = session.get(DeviceError, device_error_id)
+        device_error = get_device_error_by_device_error_id(device_error_id)
+
+        if device_error is None:
+            QMessageBox.warning(self, "Error", "Device error not found")
+            return
 
         self.form = DeviceErrorFormWindow(device_error)
         self.form.show()
 
     def delete_device_error(self):
-
         device_error_id = self.get_selected_device_error_id()
 
         if device_error_id is None:
@@ -143,18 +122,50 @@ class DeviceErrorListWindow(QWidget):
         if reply == QMessageBox.No:
             return
 
-        with get_session() as session:
-            device_error = session.get(DeviceError, device_error_id)
+        deleted = delete_device_error_by_id(device_error_id)
 
-            if device_error:
-                session.delete(device_error)
-                session.commit()
+        if not deleted:
+            QMessageBox.warning(self, "Error", "Device error could not be deleted")
+            return
 
-        self.load_device_errors()
+        self.refresh_data()
+
+
+class DeviceErrorListWindow(DeviceErrorListBase):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.new_button = QPushButton("New")
+        self.edit_button = QPushButton("Edit")
+        self.delete_button = QPushButton("Delete")
+        self.refresh_button = QPushButton("Refresh")
+
+        self.new_button.clicked.connect(self.new_device_error)
+        self.edit_button.clicked.connect(self.edit_device_error)
+        self.delete_button.clicked.connect(self.delete_device_error)
+        self.refresh_button.clicked.connect(self.refresh_data)
+
+        buttons = QHBoxLayout()
+        buttons.addWidget(self.new_button)
+        buttons.addWidget(self.edit_button)
+        buttons.addWidget(self.delete_button)
+        buttons.addWidget(self.refresh_button)
+        self.layout.addLayout(buttons)
+
+
+class DeviceErrorListDisplay(DeviceErrorListBase):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setWindowTitle("Device Errors")
+        self.table.setRowCount(0)
+
+    def load_for_customer(self, customer_no: int) -> None:
+        device_errors = get_device_errors_by_customer_no(customer_no)
+        self.load_device_errors(device_errors)
 
 
 if __name__ == "__main__":
-
     import sys
 
     create_db_and_tables()

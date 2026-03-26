@@ -11,11 +11,9 @@ from PySide6.QtWidgets import (
     QAbstractItemView,
 )
 
-from sqlmodel import select
-
-from ispring_db.core.database import get_session, create_db_and_tables
-from ispring_db.models import Error
+from ispring_db.core.database import create_db_and_tables
 from ispring_db.gui.errors.error_form import ErrorFormWindow
+from ispring_db.services.error_repository import get_all_errors, get_error_by_error_id, delete_error_by_error_id
 
 
 class ErrorListWindow(QWidget):
@@ -27,8 +25,9 @@ class ErrorListWindow(QWidget):
         self.resize(1000, 500)
 
         self.table = QTableWidget()
-
         self.table.setColumnCount(5)
+
+        self.table.setSortingEnabled(True)
         self.table.setHorizontalHeaderLabels(
             [
                 "Error ID",
@@ -85,8 +84,8 @@ class ErrorListWindow(QWidget):
 
     def load_errors(self):
 
-        with get_session() as session:
-            results = session.exec(select(Error)).all()
+
+        results = get_all_errors()
 
         self.table.setRowCount(len(results))
 
@@ -119,8 +118,8 @@ class ErrorListWindow(QWidget):
         if error_id is None:
             return
 
-        with get_session() as session:
-            error = session.get(Error, error_id)
+
+        error = get_error_by_error_id(error_id)
 
         self.form = ErrorFormWindow(error)
         self.form.show()
@@ -142,12 +141,7 @@ class ErrorListWindow(QWidget):
         if reply == QMessageBox.No:
             return
 
-        with get_session() as session:
-            error = session.get(Error, error_id)
-
-            if error:
-                session.delete(error)
-                session.commit()
+        error = delete_error_by_error_id(error_id)
 
         self.load_errors()
 

@@ -9,8 +9,9 @@ from PySide6.QtWidgets import (
     QPlainTextEdit,
 )
 
-from ispring_db.core.database import get_session
+
 from ispring_db.models import Error
+from ispring_db.services.error_repository import save_error
 
 
 class ErrorFormWindow(QWidget):
@@ -109,7 +110,6 @@ class ErrorFormWindow(QWidget):
             self.repairability_input.setCurrentText("False")
 
     def save_error(self):
-
         component = self.component_input.currentText().strip()
         error_cause = self.error_cause_input.currentText().strip()
 
@@ -122,7 +122,6 @@ class ErrorFormWindow(QWidget):
 
         severity_text = self.error_severity_input.currentText()
         error_severity = severity_map[severity_text]
-
         repairability = self.repairability_input.currentText() == "True"
 
         if not component:
@@ -134,29 +133,25 @@ class ErrorFormWindow(QWidget):
             return
 
         try:
+            if self.error is None:
+                self.error = Error(
+                    component=component,
+                    error_cause=error_cause,
+                    error_severity=error_severity,
+                    repairability=repairability,
+                )
+            else:
+                self.error.component = component
+                self.error.error_cause = error_cause
+                self.error.error_severity = error_severity
+                self.error.repairability = repairability
 
-            with get_session() as session:
-
-                if self.error:
-                    error = session.get(Error, self.error.error_id)
-                else:
-                    error = Error()
-
-                error.component = component
-                error.error_cause = error_cause
-                error.error_severity = error_severity
-                error.repairability = repairability
-
-                if not self.error:
-                    session.add(error)
-
-                session.commit()
+            save_error(self.error)
 
             QMessageBox.information(self, "Success", "Error saved.")
             self.close()
 
         except Exception as e:
-
             QMessageBox.critical(
                 self,
                 "Database Error",

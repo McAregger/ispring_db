@@ -15,29 +15,30 @@ from PySide6.QtWidgets import (
 )
 
 from ispring_db.core.database import create_db_and_tables
-from ispring_db.gui.gateways.gateway_form import GatewayFormWindow
-from ispring_db.services.gateway_repository import (
-    get_gateway_by_serial_no,
-    get_gateway_table_rows,
-    get_gateway_table_rows_by_customer_no,
-    delete_gateway_by_serial_no,
+from ispring_db.gui.logbooks.logbook_form import LogbookFormWindow
+from ispring_db.services.logbook_repository import (
+    get_log_by_id,
+    get_logbook_table_rows,
+    get_logbook_table_rows_by_mac,
+    delete_log,
 )
 
 
-class GatewayListBase(QWidget):
+class LogbookListBase(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
         self.table = QTableWidget()
-        self.table.setColumnCount(4)
+        self.table.setColumnCount(5)
         self.table.setSortingEnabled(True)
 
         self.table.setHorizontalHeaderLabels(
             [
-                "Serial No",
-                "Customer",
-                "SIM",
-                "System",
+                "Log ID",
+                "MAC",
+                "Date",
+                "Author",
+                "Text",
             ]
         )
 
@@ -57,29 +58,31 @@ class GatewayListBase(QWidget):
         self.table.resizeColumnsToContents()
 
         header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(1, QHeaderView.Stretch)
+        header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
         header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(3, QHeaderView.Stretch)
+        header.setSectionResizeMode(3, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(4, QHeaderView.Stretch)
 
-        min_widths = [140, 180, 120, 180]
+        min_widths = [90, 160, 120, 150, 250]
 
         for col, min_w in enumerate(min_widths):
             if self.table.columnWidth(col) < min_w:
                 self.table.setColumnWidth(col, min_w)
 
     def refresh_data(self) -> None:
-        rows = get_gateway_table_rows()
-        self.load_gateways(rows)
+        rows = get_logbook_table_rows()
+        self.load_logs(rows)
         QTimer.singleShot(0, self.apply_resize)
 
-    def load_gateways(self, rows) -> None:
+    def load_logs(self, rows) -> None:
         self.table.setRowCount(len(rows))
 
-        for row, gateway in enumerate(rows):
-            self.table.setItem(row, 0, QTableWidgetItem(gateway.serial_no))
-            self.table.setItem(row, 1, QTableWidgetItem(gateway.customer))
-            self.table.setItem(row, 2, QTableWidgetItem(gateway.sim))
-            self.table.setItem(row, 3, QTableWidgetItem(gateway.system))
+        for row, log in enumerate(rows):
+            self.table.setItem(row, 0, QTableWidgetItem(log.log_id))
+            self.table.setItem(row, 1, QTableWidgetItem(log.mac))
+            self.table.setItem(row, 2, QTableWidgetItem(log.log_date))
+            self.table.setItem(row, 3, QTableWidgetItem(log.log_author))
+            self.table.setItem(row, 4, QTableWidgetItem(log.log_text))
 
         self.table.resizeRowsToContents()
         self.table.clearSelection()
@@ -101,12 +104,12 @@ class GatewayListBase(QWidget):
 
             self.table.setRowHidden(row, not match)
 
-    def get_selected_serial_no(self, show_message: bool = True) -> str | None:
+    def get_selected_log_id(self, show_message: bool = True) -> int | None:
         row = self.table.currentRow()
 
         if row < 0:
             if show_message:
-                QMessageBox.warning(self, "Selection", "Please select a gateway.")
+                QMessageBox.warning(self, "Selection", "Please select a log entry.")
             return None
 
         item = self.table.item(row, 0)
@@ -115,15 +118,20 @@ class GatewayListBase(QWidget):
                 QMessageBox.warning(self, "Selection", "Selected row is invalid.")
             return None
 
-        return item.text()
+        try:
+            return int(item.text())
+        except ValueError:
+            if show_message:
+                QMessageBox.warning(self, "Selection", "Selected Log ID is invalid.")
+            return None
 
 
-class GatewayListWindow(GatewayListBase):
+class LogbookListWindow(LogbookListBase):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.setWindowTitle("Gateways")
-        self.resize(900, 500)
+        self.setWindowTitle("Logbook")
+        self.resize(1000, 500)
 
         self.form = None
 
@@ -132,9 +140,9 @@ class GatewayListWindow(GatewayListBase):
         self.delete_button = QPushButton("Delete")
         self.refresh_button = QPushButton("Refresh")
 
-        self.new_button.clicked.connect(self.new_gateway)
-        self.edit_button.clicked.connect(self.edit_gateway)
-        self.delete_button.clicked.connect(self.delete_gateway)
+        self.new_button.clicked.connect(self.new_log)
+        self.edit_button.clicked.connect(self.edit_log)
+        self.delete_button.clicked.connect(self.delete_log)
         self.refresh_button.clicked.connect(self.refresh_data)
 
         button_layout = QHBoxLayout()
@@ -147,36 +155,36 @@ class GatewayListWindow(GatewayListBase):
 
         self.refresh_data()
 
-    def new_gateway(self) -> None:
-        self.form = GatewayFormWindow()
+    def new_log(self) -> None:
+        self.form = LogbookFormWindow()
         self.form.show()
         self.form.destroyed.connect(self.refresh_data)
 
-    def edit_gateway(self) -> None:
-        serial_no = self.get_selected_serial_no()
-        if serial_no is None:
+    def edit_log(self) -> None:
+        log_id = self.get_selected_log_id()
+        if log_id is None:
             return
 
-        gateway = get_gateway_by_serial_no(serial_no)
+        log = get_log_by_id(log_id)
 
-        if gateway is None:
-            QMessageBox.warning(self, "Error", "Gateway not found.")
+        if log is None:
+            QMessageBox.warning(self, "Error", "Log entry not found.")
             self.refresh_data()
             return
 
-        self.form = GatewayFormWindow(gateway)
+        self.form = LogbookFormWindow(log)
         self.form.show()
         self.form.destroyed.connect(self.refresh_data)
 
-    def delete_gateway(self) -> None:
-        serial_no = self.get_selected_serial_no()
-        if serial_no is None:
+    def delete_log(self) -> None:
+        log_id = self.get_selected_log_id()
+        if log_id is None:
             return
 
         reply = QMessageBox.question(
             self,
-            "Delete Gateway",
-            f"Delete gateway '{serial_no}'?",
+            "Delete Log Entry",
+            f"Delete log entry '{log_id}'?",
             QMessageBox.Yes | QMessageBox.No,
         )
 
@@ -184,10 +192,10 @@ class GatewayListWindow(GatewayListBase):
             return
 
         try:
-            deleted = delete_gateway_by_serial_no(serial_no)
+            deleted = delete_log(log_id)
 
             if not deleted:
-                QMessageBox.warning(self, "Error", "Gateway not found.")
+                QMessageBox.warning(self, "Error", "Log entry not found.")
                 self.refresh_data()
                 return
 
@@ -197,19 +205,19 @@ class GatewayListWindow(GatewayListBase):
             QMessageBox.critical(
                 self,
                 "Database Error",
-                f"Could not delete gateway:\n{e}",
+                f"Could not delete log entry:\n{e}",
             )
 
 
-class GatewayListDisplay(GatewayListBase):
+class LogbookListDisplay(LogbookListBase):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Gateways")
+        self.setWindowTitle("Logbook")
         self.table.setRowCount(0)
 
-    def load_for_customer(self, customer_no: int) -> None:
-        rows = get_gateway_table_rows_by_customer_no(customer_no)
-        self.load_gateways(rows)
+    def load_for_device(self, mac: str) -> None:
+        rows = get_logbook_table_rows_by_mac(mac)
+        self.load_logs(rows)
         QTimer.singleShot(0, self.apply_resize)
 
     def clear_data(self) -> None:
@@ -225,6 +233,6 @@ if __name__ == "__main__":
     create_db_and_tables()
 
     app = QApplication(sys.argv)
-    window = GatewayListWindow()
+    window = LogbookListWindow()
     window.show()
     sys.exit(app.exec())

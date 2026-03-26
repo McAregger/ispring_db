@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
     QAbstractItemView, QMainWindow,
 )
 
-from sqlmodel import select
+
 
 from ispring_db.core.database import create_db_and_tables
 from ispring_db.models import DeviceCalibration, Device, Calibration
@@ -34,6 +34,7 @@ class DeviceCalibrationListBase(QWidget):
         self.table = QTableWidget()
 
         self.table.setColumnCount(9)
+        self.table.setSortingEnabled(True)
 
         self.table.setHorizontalHeaderLabels(
             [

@@ -11,12 +11,10 @@ from PySide6.QtWidgets import (
     QDateEdit,
 )
 
-
-
-from ispring_db.core.database import get_session
 from ispring_db.models import DeviceError
 from ispring_db.services.error_repository import get_all_errors
 from ispring_db.services.device_repository import get_all_devices
+from ispring_db.services.device_error_repository import save_device_error
 
 
 class DeviceErrorFormWindow(QWidget):
@@ -82,7 +80,6 @@ class DeviceErrorFormWindow(QWidget):
 
     def load_errors(self):
 
-
         errors = get_all_errors()
         self.error_input.clear()
         self.error_map = {}
@@ -147,23 +144,15 @@ class DeviceErrorFormWindow(QWidget):
             return
 
         try:
+            if self.device_error is None:
+                self.device_error = DeviceError()
 
-            with get_session() as session:
+            self.device_error.mac = mac
+            self.device_error.error_id = error_id
+            self.device_error.device_error_date = device_error_date
+            self.device_error.device_error_description = device_error_description
 
-                if self.device_error:
-                    de = session.get(DeviceError, self.device_error.device_error_id)
-                else:
-                    de = DeviceError()
-
-                de.mac = mac
-                de.error_id = error_id
-                de.device_error_date = device_error_date
-                de.device_error_description = device_error_description
-
-                if not self.device_error:
-                    session.add(de)
-
-                session.commit()
+            save_device_error(self.device_error)
 
             QMessageBox.information(self, "Success", "Device error saved.")
             self.close()

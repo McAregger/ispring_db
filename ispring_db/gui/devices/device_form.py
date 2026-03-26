@@ -1,6 +1,5 @@
 import re
 from datetime import date
-from ispring_db.services.customer_repository import get_all_customers
 
 from PySide6.QtCore import QDate
 from PySide6.QtWidgets import (
@@ -17,8 +16,10 @@ from PySide6.QtWidgets import (
     QApplication,
 )
 
-from ispring_db.core.database import get_session, create_db_and_tables
+from ispring_db.core.database import create_db_and_tables
 from ispring_db.models import Device
+from ispring_db.services.customer_repository import get_all_customers
+from ispring_db.services.device_repository import get_device_by_mac, save_device
 
 
 class DeviceFormWindow(QWidget):
@@ -105,11 +106,9 @@ class DeviceFormWindow(QWidget):
             self.mac_input.setReadOnly(True)
 
     def load_customers(self):
-
         customers = get_all_customers()
         self.customer_input.clear()
 
-        # Leerer Eintrag = kein Customer
         self.customer_input.addItem("", None)
 
         for customer in customers:
@@ -196,52 +195,53 @@ class DeviceFormWindow(QWidget):
             return
 
         try:
-            with get_session() as session:
-                if self.device:
-                    if mac != self.device.mac:
-                        QMessageBox.warning(
-                            self,
-                            "Invalid Change",
-                            "The MAC address is the primary key and cannot be changed.",
-                        )
-                        return
+            if self.device:
+                if mac != self.device.mac:
+                    QMessageBox.warning(
+                        self,
+                        "Invalid Change",
+                        "The MAC address is the primary key and cannot be changed.",
+                    )
+                    return
 
-                    device = session.get(Device, self.device.mac)
-                    if device is None:
-                        QMessageBox.warning(
-                            self,
-                            "Not Found",
-                            "The device could not be found in the database.",
-                        )
-                        return
-                else:
-                    existing = session.get(Device, mac)
+                device = Device(
+                    mac=self.device.mac,
+                    customer_no=self.customer_input.currentData(),
+                    manufacturing_date=self.date_input.date().toPython(),
+                    dms=self.dms_input.currentText(),
+                    ble_antenna=self.ble_ant_input.currentText(),
+                    circuit_diagram_no=self.diagram_input.text().strip(),
+                    revision=self.revision_input.text().strip(),
+                    assembly_plan=self.assembly_plan_input.text().strip(),
+                    bridge_layout=self.bridge_layout_input.currentText(),
+                    batch_no=self.batch_input.text().strip(),
+                    description=self.description_input.toPlainText().strip(),
+                )
+            else:
+                existing = get_device_by_mac(mac)
+                if existing:
+                    QMessageBox.warning(
+                        self,
+                        "Duplicate MAC",
+                        "A device with this MAC address already exists.",
+                    )
+                    return
 
-                    if existing:
-                        QMessageBox.warning(
-                            self,
-                            "Duplicate MAC",
-                            "A device with this MAC address already exists.",
-                        )
-                        return
+                device = Device(
+                    mac=mac,
+                    customer_no=self.customer_input.currentData(),
+                    manufacturing_date=self.date_input.date().toPython(),
+                    dms=self.dms_input.currentText(),
+                    ble_antenna=self.ble_ant_input.currentText(),
+                    circuit_diagram_no=self.diagram_input.text().strip(),
+                    revision=self.revision_input.text().strip(),
+                    assembly_plan=self.assembly_plan_input.text().strip(),
+                    bridge_layout=self.bridge_layout_input.currentText(),
+                    batch_no=self.batch_input.text().strip(),
+                    description=self.description_input.toPlainText().strip(),
+                )
 
-                    device = Device(mac=mac)
-
-                device.customer_no = self.customer_input.currentData()
-                device.manufacturing_date = self.date_input.date().toPython()
-                device.dms = self.dms_input.currentText()
-                device.ble_antenna = self.ble_ant_input.currentText()
-                device.circuit_diagram_no = self.diagram_input.text().strip()
-                device.revision = self.revision_input.text().strip()
-                device.assembly_plan = self.assembly_plan_input.text().strip()
-                device.bridge_layout = self.bridge_layout_input.currentText()
-                device.batch_no = self.batch_input.text().strip()
-                device.description = self.description_input.toPlainText().strip()
-
-                if not self.device:
-                    session.add(device)
-
-                session.commit()
+            save_device(device)
 
             QMessageBox.information(self, "Success", "Device saved.")
             self.close()

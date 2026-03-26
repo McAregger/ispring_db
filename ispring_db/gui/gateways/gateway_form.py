@@ -9,11 +9,10 @@ from PySide6.QtWidgets import (
     QComboBox,
 )
 
-from sqlmodel import select
 
-from ispring_db.core.database import get_session
-from ispring_db.models import Gateway, Customer
-
+from ispring_db.models import Gateway
+from ispring_db.services.gateway_repository import save_gateway, get_gateway_by_serial_no
+from ispring_db.services.customer_repository import get_all_customers
 
 class GatewayFormWindow(QWidget):
 
@@ -67,8 +66,7 @@ class GatewayFormWindow(QWidget):
 
     def load_customers(self):
 
-        with get_session() as session:
-            customers = session.exec(select(Customer)).all()
+        customers = get_all_customers()
 
         self.customer_input.clear()
         self.customer_input.addItem("")
@@ -83,7 +81,6 @@ class GatewayFormWindow(QWidget):
             self.customer_input.setCurrentIndex(0)
 
     def load_gateway(self):
-
         self.serial_input.setText(self.gateway.serial_no or "")
 
         if self.gateway.customer_no:
@@ -103,7 +100,6 @@ class GatewayFormWindow(QWidget):
         self.system_input.setText(self.gateway.system or "")
 
     def save_gateway(self):
-
         serial_no = self.serial_input.text().strip()
 
         if not serial_no:
@@ -111,58 +107,42 @@ class GatewayFormWindow(QWidget):
             return
 
         try:
+            sim_text = self.sim_input.currentText()
+            if sim_text == "True":
+                sim = True
+            elif sim_text == "False":
+                sim = False
+            else:
+                sim = None
 
-            with get_session() as session:
+            system = self.system_input.text().strip() or None
 
-                if self.gateway:
+            customer_label = self.customer_input.currentText()
+            customer_no = self.customer_map.get(customer_label)
 
-                    if serial_no != self.gateway.serial_no:
-                        QMessageBox.warning(
-                            self,
-                            "Invalid Change",
-                            "The Serial No is the primary key and cannot be changed.",
-                        )
-                        return
+            # Schutz gegen doppelte serial_no beim Neuanlegen
+            existing_gateway = get_gateway_by_serial_no(serial_no)
+            if self.gateway is None and existing_gateway is not None:
+                QMessageBox.warning(
+                    self,
+                    "Validation",
+                    f"A gateway with Serial No '{serial_no}' already exists.",
+                )
+                return
 
-                    gateway = session.get(Gateway, self.gateway.serial_no)
+            gateway = Gateway(
+                serial_no=serial_no,
+                customer_no=customer_no,
+                sim=sim,
+                system=system,
+            )
 
-                else:
-
-                    existing = session.get(Gateway, serial_no)
-
-                    if existing:
-                        QMessageBox.warning(
-                            self,
-                            "Duplicate Serial No",
-                            "A gateway with this Serial No already exists.",
-                        )
-                        return
-
-                    gateway = Gateway(serial_no=serial_no)
-
-                customer_label = self.customer_input.currentText()
-                gateway.customer_no = self.customer_map.get(customer_label)
-
-                sim_text = self.sim_input.currentText()
-                if sim_text == "True":
-                    gateway.sim = True
-                elif sim_text == "False":
-                    gateway.sim = False
-                else:
-                    gateway.sim = None
-
-                gateway.system = self.system_input.text()
-
-                if not self.gateway:
-                    session.add(gateway)
-
-                session.commit()
+            save_gateway(gateway)
 
             QMessageBox.information(self, "Success", "Gateway saved.")
             self.close()
 
         except Exception as e:
-
             QMessageBox.critical(
                 self,
                 "Database Error",
@@ -171,7 +151,6 @@ class GatewayFormWindow(QWidget):
 
 
 if __name__ == "__main__":
-
     import sys
     from PySide6.QtWidgets import QApplication
     from ispring_db.core.database import create_db_and_tables

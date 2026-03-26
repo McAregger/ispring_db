@@ -32,8 +32,8 @@ from ispring_db.gui.calibrations.calibration_list import CalibrationListWindow
 from ispring_db.gui.errors.error_list import ErrorListWindow
 from ispring_db.gui.device_calibrations.device_calibration_list import (DeviceCalibrationListWindow,
                                                                         DeviceCalibrationListDisplay)
-from ispring_db.gui.device_errors.device_error_list import DeviceErrorListWindow
-from ispring_db.gui.logs.log_list import LogListWindow
+from ispring_db.gui.device_errors.device_error_list import DeviceErrorListWindow, DeviceErrorListDisplay
+from ispring_db.gui.logbooks.logbook_list import LogbookListWindow
 
 
 class MainWindow(QMainWindow):
@@ -41,7 +41,7 @@ class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
 
-        self.setWindowTitle("Sensor System Database")
+        self.setWindowTitle("i-spring Database")
         self.resize(1600, 950)
 
         self.init_ui()
@@ -59,9 +59,11 @@ class MainWindow(QMainWindow):
 
         # ---------- LOGO OBEN ----------
         self.logo_label = QLabel()
+        self.logo_label.setContentsMargins(10,10,10,10)
         self.logo_label.setAlignment(Qt.AlignLeft)
 
-        logo_path = Path(__file__).resolve().parents[2] / "data" / "logo.png"
+        logo_path = Path(__file__).resolve().parents[2] / "ispring_db" / "data" / "logo.png"
+        print(logo_path)
 
         if logo_path.exists():
             pixmap = QPixmap(str(logo_path))
@@ -95,6 +97,7 @@ class MainWindow(QMainWindow):
         search_layout.addWidget(self.search_input)
         search_layout.addWidget(self.search_button)
         search_layout.addWidget(self.reset_button)
+        search_layout.setContentsMargins(10,0,10,10)
 
         # Splitter oben/unten
         self.vertical_splitter = QSplitter(Qt.Vertical)
@@ -111,7 +114,7 @@ class MainWindow(QMainWindow):
         self.customer_device_list = DeviceListDisplay()
         self.customer_gateway_list = GatewayListDisplay()
         self.customer_device_calibration_list = DeviceCalibrationListDisplay()
-        self.customer_device_error_list = DeviceErrorListWindow()
+        self.customer_device_error_list = DeviceErrorListDisplay()
 
         self.customer_tabs.addTab(self.customer_device_list, "Devices")
         self.customer_tabs.addTab(self.customer_gateway_list, "Gateways")
@@ -140,10 +143,15 @@ class MainWindow(QMainWindow):
         main_layout.addLayout(content_layout)
 
     def create_pages(self) -> None:
+        self.nav_list.clear()
+
+        while self.stack.count():
+            widget = self.stack.widget(0)
+            self.stack.removeWidget(widget)
 
         self.customer_list_page = CustomerListWindow()
         self.device_list_page = DeviceListWindow()
-        self.log_list_page = LogListWindow()
+        self.log_list_page = LogbookListWindow()
         self.gateway_list_page = GatewayListWindow()
         self.calibration_list_page = CalibrationListWindow()
         self.error_list_page = ErrorListWindow()
@@ -153,18 +161,25 @@ class MainWindow(QMainWindow):
         self.pages = [
             ("Customers", self.customer_list_page),
             ("Devices", self.device_list_page),
+            ("Device Calibrations", self.device_calibration_list_page),
+            ("Device Errors", self.device_error_list_page),
             ("Device Log", self.log_list_page),
             ("Gateways", self.gateway_list_page),
             ("Calibrations", self.calibration_list_page),
             ("Errors", self.error_list_page),
-            ("Device Calibrations", self.device_calibration_list_page),
-            ("Device Errors", self.device_error_list_page),
         ]
 
+        for title, page in self.pages:
+            item = QListWidgetItem(title)
 
-        for title, widget in self.pages:
-            self.nav_list.addItem(QListWidgetItem(title))
-            self.stack.addWidget(widget)
+            if title == "Customers":
+                font = item.font()
+                font.setBold(True)
+                item.setFont(font)
+
+            self.nav_list.addItem(item)
+            self.stack.addWidget(page)
+
 
     def connect_signals(self) -> None:
 
@@ -218,7 +233,6 @@ class MainWindow(QMainWindow):
 
     def load_customer_details(self, customer_no: int) -> None:
 
-
         if hasattr(self.customer_form, "load_customer"):
             self.customer_form.load_customer_by_id(customer_no)
 
@@ -229,22 +243,17 @@ class MainWindow(QMainWindow):
             self.customer_gateway_list.load_for_customer(customer_no)
 
         if hasattr(self.customer_device_calibration_list, "load_for_customer"):
-            print("Device Calibration loaded")
             self.customer_device_calibration_list.load_for_customer(customer_no)
 
         if hasattr(self.customer_device_error_list, "load_for_customer"):
             self.customer_device_error_list.load_for_customer(customer_no)
 
 
-def main() -> None:
 
+if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     window = MainWindow()
     window.show()
 
     sys.exit(app.exec())
-
-
-if __name__ == "__main__":
-    main()

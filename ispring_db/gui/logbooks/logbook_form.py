@@ -14,13 +14,15 @@ from PySide6.QtWidgets import (
     QTextEdit,
 )
 
-from sqlmodel import select
-
-from ispring_db.core.database import get_session, create_db_and_tables
-from ispring_db.models import Logbook, Device
 
 
-class LogFormWindow(QWidget):
+from ispring_db.core.database import create_db_and_tables
+from ispring_db.models import Logbook
+from ispring_db.services.logbook_repository import save_log
+from ispring_db.services.device_repository import get_all_devices
+
+
+class LogbookFormWindow(QWidget):
     def __init__(self, logbook: Logbook | None = None, parent=None):
         super().__init__(parent)
 
@@ -33,7 +35,6 @@ class LogFormWindow(QWidget):
 
         self.resize(450, 320)
 
-        # Widgets
         self.device_input = QComboBox()
 
         self.date_input = QDateEdit()
@@ -46,7 +47,6 @@ class LogFormWindow(QWidget):
         self.text_input = QTextEdit()
         self.text_input.setFixedHeight(140)
 
-        # Layout
         form = QFormLayout()
         form.addRow("Device", self.device_input)
         form.addRow("Log Date", self.date_input)
@@ -68,20 +68,19 @@ class LogFormWindow(QWidget):
         layout.addLayout(buttons)
         self.setLayout(layout)
 
-        # Daten laden
         self.load_devices()
 
         if self.logbook:
             self.load_logbook()
 
     def load_devices(self) -> None:
-        with get_session() as session:
-            devices = session.exec(select(Device)).all()
+
+        devices = get_all_devices()
 
         self.device_input.clear()
+        self.device_input.addItem("", None)
 
         for device in devices:
-            # Anzeige = MAC, gespeicherter Wert = MAC
             self.device_input.addItem(device.mac, device.mac)
 
     def load_logbook(self) -> None:
@@ -102,7 +101,6 @@ class LogFormWindow(QWidget):
         log_text = self.text_input.toPlainText().strip()
         log_date = self.date_input.date().toPython()
 
-        # Validation
         if not mac:
             QMessageBox.warning(self, "Validation", "Please select a device.")
             return
@@ -116,26 +114,15 @@ class LogFormWindow(QWidget):
             return
 
         try:
-            with get_session() as session:
-                if self.logbook:
-                    logbook = session.get(Logbook, self.logbook.log_id)
-                    if logbook is None:
-                        QMessageBox.warning(self, "Error", "Logbook entry not found.")
-                        return
-                else:
-                    logbook = Logbook()
+            logbook = Logbook(
+                log_id=self.logbook.log_id if self.logbook else None,
+                mac=mac,
+                log_date=log_date,
+                log_author=log_author,
+                log_text=log_text,
+            )
 
-                # Werte setzen
-                logbook.mac = mac
-                logbook.log_date = log_date
-                logbook.log_author = log_author
-                logbook.log_text = log_text
-
-                if not self.logbook:
-                    session.add(logbook)
-
-                session.commit()
-                session.refresh(logbook)
+            save_log(logbook)
 
             self.close()
 
@@ -154,6 +141,6 @@ if __name__ == "__main__":
     create_db_and_tables()
 
     app = QApplication(sys.argv)
-    window = LogFormWindow()
+    window = LogbookFormWindow()
     window.show()
     sys.exit(app.exec())
