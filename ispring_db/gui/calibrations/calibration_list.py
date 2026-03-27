@@ -10,7 +10,8 @@ from PySide6.QtWidgets import (
     QHeaderView,
     QAbstractItemView,
 )
-
+from PySide6.QtCore import QDate
+from datetime import date
 
 from ispring_db.core.database import create_db_and_tables
 from ispring_db.gui.calibrations.calibration_form import CalibrationFormWindow
@@ -96,7 +97,21 @@ class CalibrationListWindow(QWidget):
             self.table.setItem(row, 1, QTableWidgetItem(calibration.cal_type or ""))
             self.table.setItem(row, 2, QTableWidgetItem("" if calibration.min_temp is None else str(calibration.min_temp)))
             self.table.setItem(row, 3, QTableWidgetItem("" if calibration.max_temp is None else str(calibration.max_temp)))
-            self.table.setItem(row, 4, QTableWidgetItem(str(calibration.cal_def_date or "")))
+            # Datum Konfigurieren
+            value = getattr(calibration, "cal_def_date", None)
+
+            if value:
+                if isinstance(value, str):
+                    qdate = QDate.fromString(value, "yyyy-MM-dd")
+                    date_string = qdate.toString("dd.MM.yyyy") if qdate.isValid() else value
+                elif isinstance(value, date):
+                    date_string = value.strftime("%d.%m.%Y")
+                else:
+                    text = str(value)
+                    date_string = value
+            else:
+                date_string = ""
+            self.table.setItem(row, 4, QTableWidgetItem(date_string or ""))
             full_path = calibration.cal_def_file
             display_path = self.shorten_path(full_path, 60)
 
@@ -154,6 +169,20 @@ class CalibrationListWindow(QWidget):
         delete_calibration_with_cal_id(cal_id)
 
         self.load_calibrations()
+
+    def apply_filter(self, text: str) -> None:
+        text = text.lower().strip()
+
+        for row in range(self.table.rowCount()):
+            row_matches = False
+
+            for col in range(self.table.columnCount()):
+                item = self.table.item(row, col)
+                if item and text in item.text().lower():
+                    row_matches = True
+                    break
+
+            self.table.setRowHidden(row, not row_matches)
 
 
 if __name__ == "__main__":

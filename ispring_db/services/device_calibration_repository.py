@@ -81,4 +81,3 @@ if __name__ == "__main__":
 
     from ispring_db.core.database import create_db_and_tables
     create_db_and_tables()
-    print(get_device_calibrations_by_customer(1))

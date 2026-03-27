@@ -166,6 +166,7 @@ class DeviceListBase(QWidget):
         return item.text()
 
 
+
 class DeviceListWindow(DeviceListBase):
     def __init__(self, parent=None):
         super().__init__(parent)

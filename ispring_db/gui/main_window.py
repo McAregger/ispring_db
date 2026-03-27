@@ -30,14 +30,18 @@ from ispring_db.gui.gateways.gateway_list import GatewayListWindow
 from ispring_db.gui.gateways.gateway_list import GatewayListDisplay
 from ispring_db.gui.calibrations.calibration_list import CalibrationListWindow
 from ispring_db.gui.errors.error_list import ErrorListWindow
-from ispring_db.gui.device_calibrations.device_calibration_list import (DeviceCalibrationListWindow,
-                                                                        DeviceCalibrationListDisplay)
-from ispring_db.gui.device_errors.device_error_list import DeviceErrorListWindow, DeviceErrorListDisplay
+from ispring_db.gui.device_calibrations.device_calibration_list import (
+    DeviceCalibrationListWindow,
+    DeviceCalibrationListDisplay,
+)
+from ispring_db.gui.device_errors.device_error_list import (
+    DeviceErrorListWindow,
+    DeviceErrorListDisplay,
+)
 from ispring_db.gui.logbooks.logbook_list import LogbookListWindow
 
 
 class MainWindow(QMainWindow):
-
     def __init__(self) -> None:
         super().__init__()
 
@@ -49,9 +53,9 @@ class MainWindow(QMainWindow):
         self.connect_signals()
 
         self.nav_list.setCurrentRow(0)
+        self.on_page_changed(0)
 
     def init_ui(self) -> None:
-
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
 
@@ -59,11 +63,10 @@ class MainWindow(QMainWindow):
 
         # ---------- LOGO OBEN ----------
         self.logo_label = QLabel()
-        self.logo_label.setContentsMargins(10,10,10,10)
+        self.logo_label.setContentsMargins(10, 10, 10, 10)
         self.logo_label.setAlignment(Qt.AlignLeft)
 
         logo_path = Path(__file__).resolve().parents[2] / "ispring_db" / "data" / "logo.png"
-        print(logo_path)
 
         if logo_path.exists():
             pixmap = QPixmap(str(logo_path))
@@ -97,7 +100,7 @@ class MainWindow(QMainWindow):
         search_layout.addWidget(self.search_input)
         search_layout.addWidget(self.search_button)
         search_layout.addWidget(self.reset_button)
-        search_layout.setContentsMargins(10,0,10,10)
+        search_layout.setContentsMargins(10, 0, 10, 10)
 
         # Splitter oben/unten
         self.vertical_splitter = QSplitter(Qt.Vertical)
@@ -120,11 +123,11 @@ class MainWindow(QMainWindow):
         self.customer_tabs.addTab(self.customer_gateway_list, "Gateways")
         self.customer_tabs.addTab(
             self.customer_device_calibration_list,
-            "Device Calibrations"
+            "Device Calibrations",
         )
         self.customer_tabs.addTab(
             self.customer_device_error_list,
-            "Device Errors"
+            "Device Errors",
         )
 
         self.bottom_splitter.addWidget(self.customer_form)
@@ -180,9 +183,7 @@ class MainWindow(QMainWindow):
             self.nav_list.addItem(item)
             self.stack.addWidget(page)
 
-
     def connect_signals(self) -> None:
-
         self.nav_list.currentRowChanged.connect(self.on_page_changed)
 
         self.search_button.clicked.connect(self.perform_search)
@@ -195,19 +196,18 @@ class MainWindow(QMainWindow):
         return self.stack.currentWidget()
 
     def on_page_changed(self, index: int) -> None:
+        if index < 0 or index >= self.stack.count():
+            return
 
         self.stack.setCurrentIndex(index)
-        self.search_input.clear()
-
         page = self.current_page()
+        self.reset_search()
 
         if page and hasattr(page, "refresh_data"):
             page.refresh_data()
 
     def perform_search(self) -> None:
-
         text = self.search_input.text().strip()
-
         page = self.current_page()
 
         if page is None:
@@ -219,21 +219,24 @@ class MainWindow(QMainWindow):
             QMessageBox.information(
                 self,
                 "Search",
-                "Search is not supported on this page."
+                "Search is not supported on this page.",
             )
 
     def reset_search(self) -> None:
-
         self.search_input.clear()
 
         page = self.current_page()
 
-        if page and hasattr(page, "apply_filter"):
+        if page is None:
+            return
+
+        if hasattr(page, "apply_filter"):
             page.apply_filter("")
+        elif hasattr(page, "refresh_data"):
+            page.refresh_data()
 
     def load_customer_details(self, customer_no: int) -> None:
-
-        if hasattr(self.customer_form, "load_customer"):
+        if hasattr(self.customer_form, "load_customer_by_id"):
             self.customer_form.load_customer_by_id(customer_no)
 
         if hasattr(self.customer_device_list, "load_for_customer"):
@@ -247,7 +250,6 @@ class MainWindow(QMainWindow):
 
         if hasattr(self.customer_device_error_list, "load_for_customer"):
             self.customer_device_error_list.load_for_customer(customer_no)
-
 
 
 if __name__ == "__main__":

@@ -10,7 +10,8 @@ from PySide6.QtWidgets import (
     QHeaderView,
     QAbstractItemView,
 )
-
+from PySide6.QtCore import QDate
+from datetime import date
 from ispring_db.core.database import create_db_and_tables
 from ispring_db.models import DeviceError
 from ispring_db.gui.device_errors.device_error_form import DeviceErrorFormWindow
@@ -75,7 +76,23 @@ class DeviceErrorListBase(QWidget):
             self.table.setItem(row, 2, QTableWidgetItem(str(error.error_id)))
             self.table.setItem(row, 3, QTableWidgetItem(error.component or ""))
             self.table.setItem(row, 4, QTableWidgetItem(error.error_cause or ""))
-            self.table.setItem(row, 5, QTableWidgetItem(str(device_error.device_error_date or "")))
+
+            # Datum Konfigurieren
+            value = getattr(device_error, "device_error_date", None)
+
+            if value:
+                if isinstance(value, str):
+                    qdate = QDate.fromString(value, "yyyy-MM-dd")
+                    date_string = qdate.toString("dd.MM.yyyy") if qdate.isValid() else value
+                elif isinstance(value, date):
+                    date_string = value.strftime("%d.%m.%Y")
+                else:
+                    text = str(value)
+                    date_string = value
+            else:
+                date_string = ""
+
+            self.table.setItem(row, 5, QTableWidgetItem(date_string or ""))
             self.table.setItem(row, 6, QTableWidgetItem(device_error.device_error_description or ""))
 
     def get_selected_device_error_id(self):
@@ -130,6 +147,20 @@ class DeviceErrorListBase(QWidget):
 
         self.refresh_data()
 
+    def apply_filter(self, text: str) -> None:
+        text = text.lower().strip()
+
+        for row in range(self.table.rowCount()):
+            row_matches = False
+
+            for col in range(self.table.columnCount()):
+                item = self.table.item(row, col)
+                if item and text in item.text().lower():
+                    row_matches = True
+                    break
+
+            self.table.setRowHidden(row, not row_matches)
+
 
 class DeviceErrorListWindow(DeviceErrorListBase):
     def __init__(self, parent=None):
@@ -163,6 +194,8 @@ class DeviceErrorListDisplay(DeviceErrorListBase):
     def load_for_customer(self, customer_no: int) -> None:
         device_errors = get_device_errors_by_customer_no(customer_no)
         self.load_device_errors(device_errors)
+
+
 
 
 if __name__ == "__main__":

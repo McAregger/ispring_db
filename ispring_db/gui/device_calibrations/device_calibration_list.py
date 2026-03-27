@@ -8,9 +8,10 @@ from PySide6.QtWidgets import (
     QTableWidgetItem,
     QMessageBox,
     QHeaderView,
-    QAbstractItemView, QMainWindow,
+    QAbstractItemView,
 )
-
+from PySide6.QtCore import QDate
+from datetime import date
 
 
 from ispring_db.core.database import create_db_and_tables
@@ -92,7 +93,21 @@ class DeviceCalibrationListBase(QWidget):
             self.table.setItem(row, 2, QTableWidgetItem(calibration_text))
             self.table.setItem(row, 3, QTableWidgetItem(dc.device_cal_status))
             self.table.setItem(row, 4, QTableWidgetItem("Yes" if dc.is_active else "No"))
-            self.table.setItem(row, 5, QTableWidgetItem(str(dc.device_cal_date)))
+
+            # Datum Konfigurieren
+            value = getattr(dc, "device_cal_date", None)
+            if value:
+                if isinstance(value, str):
+                    qdate = QDate.fromString(value, "yyyy-MM-dd")
+                    date_string = qdate.toString("dd.MM.yyyy") if qdate.isValid() else value
+                elif isinstance(value, date):
+                    date_string = value.strftime("%d.%m.%Y")
+                else:
+                    text = str(value)
+                    date_string = value
+            else:
+                date_string = ""
+            self.table.setItem(row, 5, QTableWidgetItem(date_string))
 
             file_item = QTableWidgetItem(filepath_display)
             file_item.setToolTip(dc.device_cal_filepath_tdms)
@@ -154,6 +169,20 @@ class DeviceCalibrationListBase(QWidget):
         success = delete_device_calibration(device_cal_id)
 
         self.refresh_data()
+
+    def apply_filter(self, text: str) -> None:
+        text = text.lower().strip()
+
+        for row in range(self.table.rowCount()):
+            row_matches = False
+
+            for col in range(self.table.columnCount()):
+                item = self.table.item(row, col)
+                if item and text in item.text().lower():
+                    row_matches = True
+                    break
+
+            self.table.setRowHidden(row, not row_matches)
 
 
 class DeviceCalibrationListWindow(DeviceCalibrationListBase):

@@ -147,6 +147,20 @@ class ErrorListWindow(QWidget):
 
         self.load_errors()
 
+    def apply_filter(self, text: str) -> None:
+        text = text.lower().strip()
+
+        for row in range(self.table.rowCount()):
+            row_matches = False
+
+            for col in range(self.table.columnCount()):
+                item = self.table.item(row, col)
+                if item and text in item.text().lower():
+                    row_matches = True
+                    break
+
+            self.table.setRowHidden(row, not row_matches)
+
 
 if __name__ == "__main__":
 
