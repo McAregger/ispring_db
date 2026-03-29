@@ -6,6 +6,8 @@ from .device_calibration import DeviceCalibration
 from .device_error import DeviceError
 from .error import Error
 from .logbook import Logbook
+from .license import License
+from .customer_license import CustomerLicense
 
 __all__ = [
     "Calibration",
@@ -15,4 +17,5 @@ __all__ = [
     "DeviceError",
     "Error",
     "Logbook",
+    "License",
 ]

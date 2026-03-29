@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
 from ispring_db.models import Gateway
 from ispring_db.services.gateway_repository import save_gateway, get_gateway_by_serial_no
 from ispring_db.services.customer_repository import get_all_customers
+from ispring_db.gui.utils.db_error_handler import handle_db_error
 
 class GatewayFormWindow(QWidget):
 
@@ -99,7 +100,7 @@ class GatewayFormWindow(QWidget):
 
         self.system_input.setText(self.gateway.system or "")
 
-    def save_gateway(self):
+    def save_gateway(self) -> None:
         serial_no = self.serial_input.text().strip()
 
         if not serial_no:
@@ -143,11 +144,8 @@ class GatewayFormWindow(QWidget):
             self.close()
 
         except Exception as e:
-            QMessageBox.critical(
-                self,
-                "Database Error",
-                f"Could not save gateway:\n{e}",
-            )
+
+            handle_db_error(self, e)
 
 
 if __name__ == "__main__":

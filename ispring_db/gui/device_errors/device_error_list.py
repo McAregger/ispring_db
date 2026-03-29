@@ -66,6 +66,7 @@ class DeviceErrorListBase(QWidget):
     def refresh_data(self):
         device_errors = get_all_device_errors()
         self.load_device_errors(device_errors)
+        self.table.resizeRowsToContents()
 
     def load_device_errors(self, device_errors: list[tuple[DeviceError, object, object]]):
         self.table.setRowCount(len(device_errors))

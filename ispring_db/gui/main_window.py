@@ -38,7 +38,10 @@ from ispring_db.gui.device_errors.device_error_list import (
     DeviceErrorListWindow,
     DeviceErrorListDisplay,
 )
+
 from ispring_db.gui.logbooks.logbook_list import LogbookListWindow
+from ispring_db.gui.customer_licenses.customer_license_list import CustomerLicenseListWindow, CustomerLicenseListDisplay
+from ispring_db.gui.license.license_list import LicenseListWindow
 
 
 class MainWindow(QMainWindow):
@@ -118,17 +121,13 @@ class MainWindow(QMainWindow):
         self.customer_gateway_list = GatewayListDisplay()
         self.customer_device_calibration_list = DeviceCalibrationListDisplay()
         self.customer_device_error_list = DeviceErrorListDisplay()
+        self.customer_license_list = CustomerLicenseListDisplay()
 
         self.customer_tabs.addTab(self.customer_device_list, "Devices")
         self.customer_tabs.addTab(self.customer_gateway_list, "Gateways")
-        self.customer_tabs.addTab(
-            self.customer_device_calibration_list,
-            "Device Calibrations",
-        )
-        self.customer_tabs.addTab(
-            self.customer_device_error_list,
-            "Device Errors",
-        )
+        self.customer_tabs.addTab(self.customer_device_calibration_list, "Device Calibrations")
+        self.customer_tabs.addTab(self.customer_device_error_list, "Device Errors")
+        self.customer_tabs.addTab(self.customer_license_list, "Customer Licenses")
 
         self.bottom_splitter.addWidget(self.customer_form)
         self.bottom_splitter.addWidget(self.customer_tabs)
@@ -160,25 +159,31 @@ class MainWindow(QMainWindow):
         self.error_list_page = ErrorListWindow()
         self.device_calibration_list_page = DeviceCalibrationListWindow()
         self.device_error_list_page = DeviceErrorListWindow()
+        self.customer_license_list_page = CustomerLicenseListWindow()
+        self.license_list_page = LicenseListWindow()
+
 
         self.pages = [
-            ("Customers", self.customer_list_page),
-            ("Devices", self.device_list_page),
-            ("Device Calibrations", self.device_calibration_list_page),
-            ("Device Errors", self.device_error_list_page),
-            ("Device Log", self.log_list_page),
-            ("Gateways", self.gateway_list_page),
-            ("Calibrations", self.calibration_list_page),
-            ("Errors", self.error_list_page),
+            ("• Customers", self.customer_list_page),
+            ("• Devices", self.device_list_page),
+            ("• Device Calibrations", self.device_calibration_list_page),
+            ("    → Calibrations", self.calibration_list_page),
+            ("• Device Errors", self.device_error_list_page),
+            ("    → Errors", self.error_list_page),
+            ("• Device Log", self.log_list_page),
+            ("• Gateways", self.gateway_list_page),
+            ("• Customer Licenses", self.customer_license_list_page),
+            ("    → Licenses", self.license_list_page),
         ]
 
         for title, page in self.pages:
             item = QListWidgetItem(title)
 
-            if title == "Customers":
+            if title == "• Customers":
                 font = item.font()
                 font.setBold(True)
                 item.setFont(font)
+
 
             self.nav_list.addItem(item)
             self.stack.addWidget(page)
@@ -250,6 +255,9 @@ class MainWindow(QMainWindow):
 
         if hasattr(self.customer_device_error_list, "load_for_customer"):
             self.customer_device_error_list.load_for_customer(customer_no)
+
+        if hasattr(self.customer_license_list, "load_for_customer"):
+            self.customer_license_list.load_for_customer(customer_no)
 
 
 if __name__ == "__main__":

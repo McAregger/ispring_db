@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
 
 from ispring_db.models import Customer
 from ispring_db.services.customer_repository import save_customer, get_customer_by_customer_no
+from ispring_db.gui.utils.db_error_handler import handle_db_error
 
 
 class CustomerFormBase(QWidget):
@@ -151,14 +152,10 @@ class CustomerFormWindow(CustomerFormBase):
             QMessageBox.information(self, "Success", "Customer saved.")
             self.close()
 
-        except ValueError as e:
-            QMessageBox.critical(self, "Database Error", str(e))
         except Exception as e:
-            QMessageBox.critical(
-                self,
-                "Database Error",
-                f"Could not save customer:\n{e}",
-            )
+
+            handle_db_error(self, e)
+
 
 
 class CustomerFormDisplay(CustomerFormBase):

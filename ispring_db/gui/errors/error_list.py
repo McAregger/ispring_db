@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
 
 from ispring_db.core.database import create_db_and_tables
 from ispring_db.gui.errors.error_form import ErrorFormWindow
+from ispring_db.gui.utils.db_error_handler import handle_db_error
 from ispring_db.services.error_repository import get_all_errors, get_error_by_error_id, delete_error_by_error_id
 
 
@@ -86,17 +87,21 @@ class ErrorListWindow(QWidget):
 
     def load_errors(self):
 
+        try:
+            results = get_all_errors()
+            self.table.setRowCount(len(results))
 
-        results = get_all_errors()
+            for row, error in enumerate(results):
+                self.table.setItem(row, 0, QTableWidgetItem(str(error.error_id)))
+                self.table.setItem(row, 1, QTableWidgetItem(error.component or ""))
+                self.table.setItem(row, 2, QTableWidgetItem(error.error_cause or ""))
+                self.table.setItem(row, 3, QTableWidgetItem(self.severity_to_text(error.error_severity)))
+                self.table.setItem(row, 4, QTableWidgetItem("Yes" if error.repairability else "No"))
+        except Exception as e:
+            print(e)
+            handle_db_error(self, e)
 
-        self.table.setRowCount(len(results))
-
-        for row, error in enumerate(results):
-            self.table.setItem(row, 0, QTableWidgetItem(str(error.error_id)))
-            self.table.setItem(row, 1, QTableWidgetItem(error.component or ""))
-            self.table.setItem(row, 2, QTableWidgetItem(error.error_cause or ""))
-            self.table.setItem(row, 3, QTableWidgetItem(self.severity_to_text(error.error_severity)))
-            self.table.setItem(row, 4, QTableWidgetItem("Yes" if error.repairability else "No"))
+        self.table.resizeRowsToContents()
 
     def get_selected_error_id(self):
 
@@ -127,7 +132,6 @@ class ErrorListWindow(QWidget):
         self.form.show()
 
     def delete_error(self):
-
         error_id = self.get_selected_error_id()
 
         if error_id is None:
@@ -143,9 +147,13 @@ class ErrorListWindow(QWidget):
         if reply == QMessageBox.No:
             return
 
-        error = delete_error_by_error_id(error_id)
+        try:
+            delete_error_by_error_id(error_id)
+            self.load_errors()
 
-        self.load_errors()
+        except Exception as e:
+
+            handle_db_error(self, e)
 
     def apply_filter(self, text: str) -> None:
         text = text.lower().strip()

@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (
     QHeaderView,
     QAbstractItemView,
 )
-from PySide6.QtCore import QDate
+from PySide6.QtCore import QDate, Qt
 from datetime import date
 
 from ispring_db.core.database import create_db_and_tables
@@ -81,6 +81,8 @@ class CalibrationListWindow(QWidget):
 
         self.load_calibrations()
 
+
+
     def shorten_path(self, path, max_length=50):
         if len(path) <= max_length:
             return path
@@ -113,12 +115,15 @@ class CalibrationListWindow(QWidget):
                 date_string = ""
             self.table.setItem(row, 4, QTableWidgetItem(date_string or ""))
             full_path = calibration.cal_def_file
+
             display_path = self.shorten_path(full_path, 60)
 
-            item = QTableWidgetItem(display_path)
+            item = QTableWidgetItem(full_path)
             item.setToolTip(full_path)  # vollständiger Pfad bei Hover
             self.table.setItem(row, 5, item)
-
+            self.table.setWordWrap(False)
+            self.table.setTextElideMode(Qt.ElideNone)
+            self.table.resizeRowsToContents()
 
 
 

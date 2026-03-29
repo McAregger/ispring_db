@@ -128,6 +128,8 @@ class DeviceListBase(QWidget):
         self.table.setSortingEnabled(True)
 
         QTimer.singleShot(0, self.apply_resize)
+        self.table.resizeRowsToContents()
+
 
     def apply_filter(self, text: str) -> None:
         text = text.strip().lower()
@@ -295,6 +297,7 @@ class DeviceListDisplay(DeviceListBase):
 
     def apply_resize(self) -> None:
         header = self.table.horizontalHeader()
+
 
         for col in range(self.table.columnCount()):
             header.setSectionResizeMode(col, QHeaderView.ResizeToContents)

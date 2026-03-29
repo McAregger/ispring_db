@@ -115,6 +115,7 @@ class DeviceCalibrationListBase(QWidget):
 
             self.table.setItem(row, 7, QTableWidgetItem(dc.device_cal_total_error))
             self.table.setItem(row, 8, QTableWidgetItem(dc.device_cal_station))
+            self.table.resizeRowsToContents()
 
     def refresh_data(self) -> None:
         device_calibrations = get_all_device_calibrations()
