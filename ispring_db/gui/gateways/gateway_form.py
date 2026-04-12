@@ -11,8 +11,8 @@ from PySide6.QtWidgets import (
 
 
 from ispring_db.models import Gateway
-from ispring_db.services.gateway_repository import save_gateway, get_gateway_by_serial_no
-from ispring_db.services.customer_repository import get_all_customers
+from ispring_db.repositories.gateway_repository import save_gateway, get_gateway_by_serial_no
+from ispring_db.repositories.customer_repository import get_all_customers
 from ispring_db.gui.utils.db_error_handler import handle_db_error
 
 class GatewayFormWindow(QWidget):

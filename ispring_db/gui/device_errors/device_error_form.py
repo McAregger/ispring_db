@@ -12,9 +12,9 @@ from PySide6.QtWidgets import (
 )
 
 from ispring_db.models import DeviceError
-from ispring_db.services.error_repository import get_all_errors
-from ispring_db.services.device_repository import get_all_devices
-from ispring_db.services.device_error_repository import save_device_error
+from ispring_db.repositories.error_repository import get_all_errors
+from ispring_db.repositories.device_repository import get_all_devices
+from ispring_db.repositories.device_error_repository import save_device_error
 
 
 class DeviceErrorFormWindow(QWidget):

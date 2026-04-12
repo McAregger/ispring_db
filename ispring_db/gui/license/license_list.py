@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
 
 from ispring_db.core.database import create_db_and_tables
 from ispring_db.gui.license.license_form import LicenseFormWindow
-from ispring_db.services.license_repository import (
+from ispring_db.repositories.license_repository import (
     get_license_by_id,
     get_all_licenses,
     delete_license_by_id,

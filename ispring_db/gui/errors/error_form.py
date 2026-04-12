@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
 
 
 from ispring_db.models import Error
-from ispring_db.services.error_repository import save_error
+from ispring_db.repositories.error_repository import save_error
 
 
 class ErrorFormWindow(QWidget):

@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
 
 from ispring_db.core.database import create_db_and_tables
 from ispring_db.gui.customer_licenses.customer_license_form import CustomerLicenseFormWindow
-from ispring_db.services.customer_license_repository import (
+from ispring_db.repositories.customer_license_repository import (
     get_customer_license_rows,
     get_customer_license_rows_by_customer_no,
     get_customer_license_by_id,

@@ -16,9 +16,9 @@ from PySide6.QtWidgets import (
 
 from ispring_db.core.database import create_db_and_tables
 from ispring_db.models import CustomerLicense
-from ispring_db.services.customer_repository import get_all_customers
-from ispring_db.services.license_repository import get_all_licenses
-from ispring_db.services.customer_license_repository import save_customer_license
+from ispring_db.repositories.customer_repository import get_all_customers
+from ispring_db.repositories.license_repository import get_all_licenses
+from ispring_db.repositories.customer_license_repository import save_customer_license
 from ispring_db.gui.utils.db_error_handler import handle_db_error
 
 

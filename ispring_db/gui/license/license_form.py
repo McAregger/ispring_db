@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (
 )
 
 from ispring_db.models.license import License
-from ispring_db.services.license_repository import (
+from ispring_db.repositories.license_repository import (
     save_license,
     get_license_by_id,
 )

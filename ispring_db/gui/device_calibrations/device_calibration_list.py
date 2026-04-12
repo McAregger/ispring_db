@@ -17,7 +17,7 @@ from datetime import date
 from ispring_db.core.database import create_db_and_tables
 from ispring_db.models import DeviceCalibration, Device, Calibration
 from ispring_db.gui.device_calibrations.device_calibration_form import DeviceCalibrationFormWindow
-from ispring_db.services.device_calibration_repository import (
+from ispring_db.repositories.device_calibration_repository import (
     get_device_calibrations_by_customer_no,
     get_device_calibration_by_device_cal_id,
     delete_device_calibration,

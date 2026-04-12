@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
 
 from ispring_db.core.database import create_db_and_tables
 from ispring_db.gui.gateways.gateway_form import GatewayFormWindow
-from ispring_db.services.gateway_repository import (
+from ispring_db.repositories.gateway_repository import (
     get_gateway_by_serial_no,
     get_gateway_table_rows,
     get_gateway_table_rows_by_customer_no,

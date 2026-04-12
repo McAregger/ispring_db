@@ -15,7 +15,7 @@ from datetime import date
 
 from ispring_db.core.database import create_db_and_tables
 from ispring_db.gui.calibrations.calibration_form import CalibrationFormWindow
-from ispring_db.services.calibration_repository import (get_all_calibrations, get_calibration_with_cal_id,
+from ispring_db.repositories.calibration_repository import (get_all_calibrations, get_calibration_with_cal_id,
                                                        delete_calibration_with_cal_id)
 
 

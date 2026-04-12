@@ -18,8 +18,9 @@ from PySide6.QtWidgets import (
 
 from ispring_db.core.database import create_db_and_tables
 from ispring_db.models import Device
-from ispring_db.services.customer_repository import get_all_customers
-from ispring_db.services.device_repository import get_device_by_mac, save_device
+from ispring_db.repositories.customer_repository import get_all_customers
+from ispring_db.repositories.device_repository import (get_device_by_mac,
+                                                       save_device)
 
 
 class DeviceFormWindow(QWidget):

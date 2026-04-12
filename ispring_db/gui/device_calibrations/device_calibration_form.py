@@ -14,9 +14,9 @@ from PySide6.QtWidgets import (
 )
 
 from ispring_db.models import DeviceCalibration
-from ispring_db.services.device_repository import get_all_devices
-from ispring_db.services.calibration_repository import get_all_calibrations
-from ispring_db.services.device_calibration_repository import (
+from ispring_db.repositories.device_repository import get_all_devices
+from ispring_db.repositories.calibration_repository import get_all_calibrations
+from ispring_db.repositories.device_calibration_repository import (
     get_device_calibration_by_device_cal_id,
     save_device_calibration as save_device_calibration_record,
 )

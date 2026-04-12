@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (
 
 
 from ispring_db.models import Calibration
-from ispring_db.services.calibration_repository import save_calibration
+from ispring_db.repositories.calibration_repository import save_calibration
 
 
 class CalibrationFormWindow(QWidget):

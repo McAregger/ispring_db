@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
 
 from ispring_db.core.database import create_db_and_tables
 from ispring_db.gui.logbooks.logbook_form import LogbookFormWindow
-from ispring_db.services.logbook_repository import (
+from ispring_db.repositories.logbook_repository import (
     get_log_by_id,
     get_logbook_table_rows,
     get_logbook_table_rows_by_mac,

@@ -18,8 +18,8 @@ from PySide6.QtWidgets import (
 
 from ispring_db.core.database import create_db_and_tables
 from ispring_db.models import Logbook
-from ispring_db.services.logbook_repository import save_log
-from ispring_db.services.device_repository import get_all_devices
+from ispring_db.repositories.logbook_repository import save_log
+from ispring_db.repositories.device_repository import get_all_devices
 
 
 class LogbookFormWindow(QWidget):

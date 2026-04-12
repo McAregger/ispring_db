@@ -13,7 +13,8 @@ from PySide6.QtWidgets import (
 
 
 from ispring_db.models import Customer
-from ispring_db.services.customer_repository import save_customer, get_customer_by_customer_no
+from ispring_db.repositories.customer_repository import (save_customer,
+                                                         get_customer_by_customer_no)
 from ispring_db.gui.utils.db_error_handler import handle_db_error
 
 

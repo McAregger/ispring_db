@@ -15,7 +15,7 @@ from datetime import date
 from ispring_db.core.database import create_db_and_tables
 from ispring_db.models import DeviceError
 from ispring_db.gui.device_errors.device_error_form import DeviceErrorFormWindow
-from ispring_db.services.device_error_repository import (
+from ispring_db.repositories.device_error_repository import (
     get_all_device_errors,
     get_device_errors_by_customer_no,
     get_device_error_by_device_error_id,

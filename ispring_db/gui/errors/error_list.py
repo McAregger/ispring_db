@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
 from ispring_db.core.database import create_db_and_tables
 from ispring_db.gui.errors.error_form import ErrorFormWindow
 from ispring_db.gui.utils.db_error_handler import handle_db_error
-from ispring_db.services.error_repository import get_all_errors, get_error_by_error_id, delete_error_by_error_id
+from ispring_db.repositories.error_repository import get_all_errors, get_error_by_error_id, delete_error_by_error_id
 
 
 class ErrorListWindow(QWidget):

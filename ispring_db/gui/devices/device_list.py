@@ -15,18 +15,17 @@ from PySide6.QtWidgets import (
 )
 
 
-
 from ispring_db.core.database import create_db_and_tables
 from ispring_db.models import Device
 from ispring_db.gui.devices.device_form import DeviceFormWindow
-from ispring_db.services.device_repository import (
+from ispring_db.repositories.device_repository import (
     get_all_devices,
     get_devices_by_customer_no,
     delete_device_by_mac,
     get_device_by_mac,
     get_device_dependencies_count,
 )
-from ispring_db.services.customer_repository import get_customer_by_customer_no
+from ispring_db.repositories.customer_repository import get_customer_by_customer_no
 
 
 class DeviceListBase(QWidget):
